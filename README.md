@@ -122,6 +122,10 @@ Todas as integrações externas são contratos estritos baseados em `typing.Prot
 * **Memória Semântica**: Fatos persistentes aprendidos sobre o cliente (ex.: *"gosta de reuniões pela manhã"*, *"empresa: XPTO"*).
 * **Handoff**: Capacidade de alternar o status da thread para `human`, pausando o agente de IA enquanto um atendente opera a conversa pelo painel.
 
+### 7. Guardrails em Duas Camadas & Pipeline de Middlewares (LangGraph)
+* **Guardrails Ativos**: Proteção na borda (sanitização de PII e caracteres inválidos) e nós de *Input/Output Guardrails* no LangGraph, bloqueando ataques de *Prompt Injection* e desvios de escopo antes de gastar tokens na LLM principal.
+* **Middlewares Extensíveis (Estilo MediatR Pipeline)**: Interceptação assíncrona de ciclo de vida no LangGraph para auditoria de latência, controle de teto de custos/tokens por usuário e logs estruturados de auditoria.
+
 ---
 
 ## 🛠️ Stack Tecnológica

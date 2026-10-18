@@ -75,6 +75,8 @@ Como operador de suporte e engenheiro de confiabilidade, quero acompanhar a tele
 1. **Given** uma intenção explícita de falar com um humano ou acionamento pelo operador, **When** o estado da thread é alterado para `status = 'human'`, **Then** novas mensagens recebidas continuam sendo registradas no histórico, mas a fila não despacha tarefas para o agente de IA.
 2. **Given** a execução de qualquer turno do grafo LangGraph, **When** a resposta é gerada, **Then** traces completos de custo, latência, tokens de entrada/saída e nós executados são enviados para o Langfuse.
 3. **Given** itens com status `dead` na fila após falhas transitórias resolvidas, **When** o operador dispara o comando de reprocessamento via API administrativa, **Then** os itens voltam para o status `pending` com contador de tentativas zerado.
+4. **Given** uma tentativa de ataque de Prompt Injection ou pergunta fora do escopo corporativo, **When** a mensagem atinge o nó de Input Guardrail no LangGraph, **Then** a requisição é interceptada imediatamente com resposta de recusa pré-definida, sem invocar o agente principal nem consumir ferramentas RAG.
+5. **Given** a execução de nós no grafo LangGraph, **When** a mensagem passa pelo pipeline de Middlewares, **Then** o Middleware de Auditoria e Custos registra a latência exata, calcula os tokens consumidos e valida se o orçamento da thread foi respeitado.
 
 ---
 
@@ -107,6 +109,8 @@ Como operador de suporte e engenheiro de confiabilidade, quero acompanhar a tele
 - **FR-016**: A borda DEVE converter mensagens de áudio em texto (transcrição) e imagens em texto descritivo antes do enfileiramento, mantendo o contrato da fila estritamente textual.
 - **FR-017**: O sistema DEVE enviar traces detalhados de execução para o Langfuse e registrar logs estruturados compatíveis com OpenTelemetry.
 - **FR-018**: O sistema DEVE fornecer endpoints administrativos protegidos para consulta de status da fila, métricas operacionais e reprocessamento de mensagens da DLQ.
+- **FR-019**: O sistema DEVE implementar Guardrails de segurança em duas camadas: na borda (sanitização de PII e caracteres maliciosos) e no grafo LangGraph (nó de Input Guardrail para detecção de prompt injection / fuga de escopo e nó de Output Guardrail para prevenção de vazamento de dados do sistema), impedindo chamadas desnecessárias a modelos caros.
+- **FR-020**: A camada de cognição DEVE implementar um pipeline extensível de Middlewares (estilo Pipeline Behaviors / Callbacks do LangChain e LangGraph) para interceptação de ciclo de vida: cálculo de latência, auditoria de tokens/custos, verificação de teto de orçamento diário por thread e logs estruturados.
 
 ### Key Entities
 
@@ -128,6 +132,7 @@ Como operador de suporte e engenheiro de confiabilidade, quero acompanhar a tele
 - **SC-005**: A troca entre provedores de LLM (ex.: Gemini para OpenAI) e entre implementações de fila (Postgres para Mock) pode ser realizada exclusivamente via alteração de arquivo de configuração, sem modificações no código-fonte das camadas de domínio ou pipeline de worker.
 - **SC-006**: Mensagens com falhas irrecuperáveis ou erros consecutivos atingem a Dead-Letter Queue (DLQ) com diagnóstico completo preservado e podem ser reprocessadas via comando administrativo com recuperação de 100% dos itens elegíveis.
 - **SC-007**: Toda interação executada pelo grafo LangGraph gera um trace correspondente no Langfuse com métricas de tempo de resposta e consumo de tokens registradas.
+- **SC-008**: 100% das tentativas simuladas de prompt injection são interceptadas pelo nó de Guardrail antes do nó principal de raciocínio, registrando o incidente nos logs de auditoria sem onerar a LLM principal.
 
 ## Assumptions
 

@@ -14,8 +14,8 @@
 ## Requirement Completeness
 
 - [x] No [NEEDS CLARIFICATION] markers remain
-- [x] Requirements are testable, unambiguous, and numbered (FR-001 to FR-018)
-- [x] Success criteria are measurable and verifiable (SC-001 to SC-007)
+- [x] Requirements are testable, unambiguous, and numbered (FR-001 to FR-020)
+- [x] Success criteria are measurable and verifiable (SC-001 to SC-008)
 - [x] Success criteria are technology-agnostic at the outcome level
 - [x] All acceptance scenarios are defined using Given/When/Then
 - [x] Edge cases are identified (outages, unsupported media, concurrency, telemetry failure)
