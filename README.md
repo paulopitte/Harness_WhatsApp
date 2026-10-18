@@ -1,0 +1,1 @@
+WhatsApp Harness em Python 3.13 com Clean Architecture, DDD e Ports & Adapters. Requisitos principais: (1) Borda HTTP em FastAPI com ACK 200 imediato, verificação de assinatura, normalização e trava anti-loop/rate limit; (2) Resiliência e Quarentena de Borda (Edge Retry & DLQ);
