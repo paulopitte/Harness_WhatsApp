@@ -4,7 +4,7 @@
 > *Baseado em Clean Architecture, Domain-Driven Design (DDD), SOLID e o padrão Ports & Adapters (Hexagonal).*
 
 > [!NOTE]
-> **Origem do Projeto:** Este projeto está sendo ativamente desenvolvido com base em **estudos aprofundados em engenharia de software aplicada a IA** (LangChain, LangGraph, sistemas orientados a eventos) e na identificação de **necessidades e dores reais do mercado corporativo**. O objetivo é preencher o abismo existente entre "scripts de demonstração" e sistemas verdadeiramente resilientes e prontos para produção em larga escala.
+> **Origem do Projeto:** Este projeto está sendo ativamente desenvolvido com base em meus **estudos aprofundados em engenharia de software aplicada a IA** (LangChain, LangGraph, sistemas orientados a eventos) e na identificação de **necessidades e dores reais do mercado corporativo**. O objetivo é preencher o abismo existente entre "scripts de demonstração" e sistemas verdadeiramente resilientes e prontos para produção em larga escala.
 
 [![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
