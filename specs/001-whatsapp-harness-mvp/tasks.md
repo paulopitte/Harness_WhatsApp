@@ -61,21 +61,21 @@ description: "Lista de tarefas executáveis e ordenadas por dependência para o 
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T016 [P] [US1] Criar testes unitários de verificação HMAC, sanitização de PII e normalização de payload em `tests/unit/test_edge_normalize_and_verify.py`
-- [ ] T017 [P] [US1] Criar testes de integração para idempotência (`inbound_dedup`), debounce persistido (`scheduled_for`) e claim concorrente (`SKIP LOCKED`) em `tests/integration/test_postgres_debounce_and_claim.py`
+- [X] T016 [P] [US1] Criar testes unitários de verificação HMAC, sanitização de PII e normalização de payload em `tests/unit/test_edge_normalize_and_verify.py`
+- [X] T017 [P] [US1] Criar testes de integração para idempotência (`inbound_dedup`), debounce persistido (`scheduled_for`) e claim concorrente (`SKIP LOCKED`) em `tests/integration/test_postgres_debounce_and_claim.py`
 
 ### Implementation for User Story 1
 
-- [ ] T018 [P] [US1] Implementar validação criptográfica `X-Hub-Signature-256` em `src/harness/edge/verify.py`
-- [ ] T019 [P] [US1] Implementar sanitização rápida de PII (Fast Guardrail de borda) e parser de payload para `NormalizedTextMessage` em `src/harness/edge/normalize.py`
-- [ ] T020 [US1] Implementar Fast-Retry com `tenacity` (3 tentativas de 50ms/100ms/200ms) e persistência na tabela `quarantine_inbound` (Edge DLQ) em `src/harness/edge/resilience.py`
-- [ ] T021 [US1] Implementar `PostgresQueueAdapter` cumprindo `QueueEnqueuerProtocol` (idempotência + upsert de debounce via índice parcial `idx_queue_unique_pending_thread`) e `QueueConsumerProtocol` (`FOR UPDATE SKIP LOCKED`, `mark_done`, `mark_failed_or_dead`) em `src/harness/ingress/postgres_queue.py`
-- [ ] T022 [P] [US1] Implementar `EchoCognitionEngine` (cumprindo `CognitionEngineProtocol`) em `src/harness/cognition/echo_engine.py`
-- [ ] T023 [P] [US1] Implementar `ConsoleOutboundProvider` (cumprindo `OutboundProviderProtocol`) em `src/harness/outbound/providers/console.py` e despachante `OutboundSender` em `src/harness/outbound/sender.py`
-- [ ] T024 [US1] Implementar `ProcessQueueItemPipeline` (orquestrando claim -> cognição -> outbound -> confirmação `done` ou retry/DLQ `dead`) em `src/harness/workers/pipeline.py` e loop de polling concorrente em `src/harness/workers/runner.py`
-- [ ] T025 [US1] Implementar endpoints `GET /webhook` e `POST /webhook` (ACK `< 150ms`) em `src/harness/edge/webhook.py`
-- [ ] T026 [US1] Implementar Composition Root (wiring de dependências) em `src/harness/app.py` e scripts de inicialização `scripts/run_webhook.py` e `scripts/run_worker.py`
-- [ ] T027 [US1] Implementar simulador CLI de webhooks `scripts/send_fake_msg.py` (com suporte a `--text`, `--burst`, `--duplicate` e `--corrupt`)
+- [X] T018 [P] [US1] Implementar validação criptográfica `X-Hub-Signature-256` em `src/harness/edge/verify.py`
+- [X] T019 [P] [US1] Implementar sanitização rápida de PII (Fast Guardrail de borda) e parser de payload para `NormalizedTextMessage` em `src/harness/edge/normalize.py`
+- [X] T020 [US1] Implementar Fast-Retry com `tenacity` (3 tentativas de 50ms/100ms/200ms) e persistência na tabela `quarantine_inbound` (Edge DLQ) em `src/harness/edge/resilience.py`
+- [X] T021 [US1] Implementar `PostgresQueueAdapter` cumprindo `QueueEnqueuerProtocol` (idempotência + upsert de debounce via índice parcial `idx_queue_unique_pending_thread`) e `QueueConsumerProtocol` (`FOR UPDATE SKIP LOCKED`, `mark_done`, `mark_failed_or_dead`) em `src/harness/ingress/postgres_queue.py`
+- [X] T022 [P] [US1] Implementar `EchoCognitionEngine` (cumprindo `CognitionEngineProtocol`) em `src/harness/cognition/echo_engine.py`
+- [X] T023 [P] [US1] Implementar `ConsoleOutboundProvider` (cumprindo `OutboundProviderProtocol`) em `src/harness/outbound/providers/console.py` e despachante `OutboundSender` em `src/harness/outbound/sender.py`
+- [X] T024 [US1] Implementar `ProcessQueueItemPipeline` (orquestrando claim -> cognição -> outbound -> confirmação `done` ou retry/DLQ `dead`) em `src/harness/workers/pipeline.py` e loop de polling concorrente em `src/harness/workers/runner.py`
+- [X] T025 [US1] Implementar endpoints `GET /webhook` e `POST /webhook` (ACK `< 150ms`) em `src/harness/edge/webhook.py`
+- [X] T026 [US1] Implementar Composition Root (wiring de dependências) em `src/harness/app.py` e scripts de inicialização `scripts/run_webhook.py` e `scripts/run_worker.py`
+- [X] T027 [US1] Implementar simulador CLI de webhooks `scripts/send_fake_msg.py` (com suporte a `--text`, `--burst`, `--duplicate` e `--corrupt`)
 
 **Checkpoint**: User Story 1 (MVP Base da Harness) 100% funcional e testável ponta a ponta sem gastar 1 centavo com LLM ou Meta.
 
