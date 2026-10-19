@@ -5,8 +5,8 @@ que valida o header `X-Admin-Api-Key` em tempo constante (`hmac.compare_digest`)
 `HTTP 401 Unauthorized` no padrão RFC 9457 (`ProblemDetails`) em português.
 """
 
-from collections.abc import Callable
 import hmac
+from collections.abc import Callable
 
 from fastapi import Header, HTTPException, status
 

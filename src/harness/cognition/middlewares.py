@@ -9,11 +9,11 @@ Permite interceptar cada execução do agente (antes e depois do grafo LangGraph
 4. `AuditRunMiddleware`: Persistir o `AgentRunRecord` completo na tabela `agent_runs` (ou em memória).
 """
 
+import re
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-import re
-import time
 from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 

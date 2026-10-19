@@ -1,6 +1,7 @@
 """Entrypoint do Processo 2: Worker Assíncrono (`worker` — T026)."""
 
 import asyncio
+import contextlib
 import signal
 
 from harness.app import build_container
@@ -13,11 +14,8 @@ async def main() -> None:
 
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
-        try:
+        with contextlib.suppress(NotImplementedError):
             loop.add_signal_handler(sig, container.worker_runner.request_stop)
-        except NotImplementedError:
-            # No Windows, add_signal_handler pode não ser suportado para SIGTERM
-            pass
 
     print(
         f"⚙️  [WorkerRunner] Iniciando {settings.queue.worker_concurrency} workers concorrentes "

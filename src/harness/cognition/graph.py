@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Any, TypedDict
 from uuid import UUID
 
+import yaml
 from langchain_core.tools import BaseTool, tool
 from langgraph.graph import END, START, StateGraph
-import yaml
 
 from harness.cognition.factory import ChatModelAdapterProtocol
 from harness.cognition.guardrails import (

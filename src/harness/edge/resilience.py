@@ -5,13 +5,11 @@ para não perder nenhum webhook bruto nem travar a Meta com HTTP 500 em payloads
 """
 
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol
 
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from harness.domain.queue import QuarantineEntry
-
-T = TypeVar("T")
 
 
 class QuarantineRepositoryProtocol(Protocol):
@@ -32,7 +30,7 @@ class InMemoryQuarantineRepository:
         self.entries.append(entry)
 
 
-async def execute_with_fast_retry(
+async def execute_with_fast_retry[T](
     operation: Callable[[], Awaitable[T]],
     *,
     attempts: int = 3,

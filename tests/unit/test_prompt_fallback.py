@@ -1,6 +1,7 @@
 """Testes Unitários de PromptOps (`PromptManager`): Cache TTL, Langfuse e Fallback YAML Local (`T042`)."""
 
 from dataclasses import dataclass
+
 import pytest
 
 from harness.cognition.factory import ModelFactory

@@ -7,8 +7,8 @@ imutabilidade de Value Objects e carregamento de `IOptions<HarnessSettings>`.
 from dataclasses import FrozenInstanceError
 from uuid import UUID
 
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
 from harness.domain import (
     AgentRunRecord,

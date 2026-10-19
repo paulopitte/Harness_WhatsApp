@@ -8,9 +8,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
+import yaml
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import yaml
 
 
 class AppConfig(BaseModel):

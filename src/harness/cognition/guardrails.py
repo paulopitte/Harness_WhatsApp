@@ -5,8 +5,8 @@ que inspecionam a entrada do usuário antes de gastar tokens da LLM e validam a 
 de enviá-la ao cliente via WhatsApp.
 """
 
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 from typing import Any
 
 # Padrões determinísticos de alta precisão para detecção de Prompt Injection / Jailbreak (PT-BR e EN)
@@ -122,7 +122,7 @@ def inspect_output_guardrail(
     return GuardrailVerdict(blocked=False)
 
 
-async def input_guardrail_node(state: dict[str, Any]) -> dict[str, Any]:
+async def input_guardrail_node(state: Any) -> dict[str, Any]:
     """Nó LangGraph de Input Guardrail: bloqueia ataques antes de acionar a LLM."""
     user_text = str(state.get("user_text", ""))
     enabled = bool(state.get("guardrails_enabled", True))
@@ -147,7 +147,7 @@ async def input_guardrail_node(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-async def output_guardrail_node(state: dict[str, Any]) -> dict[str, Any]:
+async def output_guardrail_node(state: Any) -> dict[str, Any]:
     """Nó LangGraph de Output Guardrail: valida a resposta final antes do envio ao WhatsApp."""
     if state.get("guardrail_triggered"):
         return {}

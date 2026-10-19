@@ -9,8 +9,8 @@ Cumprem simultaneamente `QueueEnqueuerProtocol` e `QueueConsumerProtocol` (SOLID
 """
 
 import asyncio
-from datetime import UTC, datetime, timedelta
 import json
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 

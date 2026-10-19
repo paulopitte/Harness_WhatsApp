@@ -7,10 +7,10 @@ Equivalente no C#/.NET: `Serilog` (com `LogContext.PushProperty("CorrelationId",
 from contextvars import ContextVar
 from typing import Any
 
+import structlog
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-import structlog
 
 from harness.settings import HarnessSettings
 

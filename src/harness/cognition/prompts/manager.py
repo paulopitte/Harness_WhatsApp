@@ -4,9 +4,9 @@ Equivalente no C#/.NET: `IPromptProvider` com `IMemoryCache` (TTL configurável)
 que lê de `configs/prompts/{prompt_name}.yaml` caso o servidor Langfuse esteja indisponível ou desabilitado.
 """
 
+import time
 from dataclasses import dataclass
 from pathlib import Path
-import time
 from typing import Any, Protocol, runtime_checkable
 
 import yaml

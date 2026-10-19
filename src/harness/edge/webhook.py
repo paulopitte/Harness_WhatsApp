@@ -6,8 +6,9 @@ Princípio I da Constitution:
   devolvendo `HTTP 200 OK` em `< 150ms`.
 """
 
-from collections.abc import Awaitable, Callable
 import json
+from collections.abc import Awaitable, Callable
+from functools import partial
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, Header, Query, Request, Response, status
@@ -188,8 +189,9 @@ def create_webhook_app(
             # 5. Enfileiramento com Fast-Retry (`tenacity`) e Debounce Persistido (FR-003, FR-005, FR-006)
             try:
                 queued_id = await execute_with_fast_retry(
-                    lambda msg=normalized_msg: queue_enqueuer.enqueue_with_debounce(
-                        msg,
+                    partial(
+                        queue_enqueuer.enqueue_with_debounce,
+                        normalized_msg,
                         debounce_seconds=settings.queue.debounce_seconds,
                     ),
                     attempts=settings.edge.fast_retry_attempts,

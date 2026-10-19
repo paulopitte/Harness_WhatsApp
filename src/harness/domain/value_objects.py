@@ -5,9 +5,9 @@ No Python 3.13, `@dataclass(frozen=True, slots=True)` cria Value Objects imutáv
 comparáveis por valor e com baixo consumo de memória (`slots=True`), sem depender de bibliotecas externas.
 """
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
-import re
 
 from harness.domain.exceptions import PayloadNormalizationError
 

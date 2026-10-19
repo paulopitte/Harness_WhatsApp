@@ -205,7 +205,7 @@ class ModelFactory:
             lc_openai = ChatOpenAI(
                 model=llm_config.model,
                 temperature=llm_config.temperature,
-                max_tokens=llm_config.max_tokens,
+                max_completion_tokens=llm_config.max_tokens,
                 api_key=openai_key or "missing-api-key",  # type: ignore[arg-type]
             )
             return LangChainChatModelAdapter(

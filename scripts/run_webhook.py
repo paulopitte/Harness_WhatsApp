@@ -3,8 +3,8 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
 
 from harness.app import build_container
 from harness.edge.webhook import create_webhook_app
