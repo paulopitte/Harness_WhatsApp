@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "whatsapp-harness"
+version = "0.1.0"
+description = "Production-Grade AI Agent Harness for WhatsApp in Python 3.13 (Clean Architecture, DDD, SOLID, LangGraph, PGVector & Langfuse)"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+authors = [
+    { name = "Paulo Pitte" }
+]
+dependencies = [
+    # Core Web, Contracts & Resilience
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "pyyaml>=6.0.2",
+    "httpx>=0.28.0",
+    "tenacity>=9.0.0",
+    # Database & Vector Store (PostgreSQL 16 + pgvector)
+    "psycopg[binary,pool]>=3.2.3",
+    "pgvector>=0.3.6",
+    "langchain-postgres>=0.0.12",
+    # Cognition (LangChain v1 & LangGraph)
+    "langchain>=1.0.0",
+    "langchain-core>=0.3.25",
+    "langgraph>=1.0.0",
+    "langchain-google-genai>=2.0.5",
+    "langchain-openai>=0.2.10",
+    "langchain-ollama>=0.2.0",
+    # PromptOps & Observability
+    "langfuse>=2.55.0",
+    "structlog>=24.4.0",
+    "opentelemetry-api>=1.28.0",
+    "opentelemetry-sdk>=1.28.0",
+]
+
+[project.optional-dependencies]
+qdrant = [
+    "langchain-qdrant>=0.2.0",
+    "qdrant-client>=1.12.0",
+]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "types-PyYAML>=6.0.12",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/harness"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+mypy_path = "src"
+packages = ["harness"]
+ignore_missing_imports = true
+

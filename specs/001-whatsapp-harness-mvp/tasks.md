@@ -24,11 +24,11 @@ description: "Lista de tarefas executáveis e ordenadas por dependência para o 
 
 **Purpose**: Inicialização do pacote Python 3.13 com `uv`, infraestrutura Docker unificada (`pgvector`) e arquivos de configuração base.
 
-- [ ] T001 Criar estrutura completa de pacotes e arquivos `__init__.py` em `src/harness/` (`domain`, `edge`, `edge/media`, `ingress`, `persistence`, `workers`, `cognition`, `cognition/prompts`, `cognition/retrievers`, `outbound`, `outbound/providers`, `ops`), `scripts/` e `tests/` (`unit`, `integration`, `load`)
-- [ ] T002 Criar arquivo `pyproject.toml` na raiz com configuração do `uv`, Python `>=3.13`, dependências homologadas no `plan.md` e configurações estritas do `pytest`, `ruff` e `mypy`
-- [ ] T003 [P] Criar `docker-compose.yml` na raiz com o serviço `postgres` utilizando a imagem `pgvector/pgvector:pg16`, healthcheck e volume persistente
-- [ ] T004 [P] Criar `.env.example` na raiz e `configs/harness.yaml` com todas as chaves operacionais tipadas (`debounce_seconds`, `max_retries`, `rate_limit`, `llm`, `rag`, `guardrails`, `prompts`, `outbound`)
-- [ ] T005 [P] Criar o arquivo de prompt local versionado `configs/prompts/default_agent.yaml` para servir de fallback offline e ambiente de teste (FR-021)
+- [X] T001 Criar estrutura completa de pacotes e arquivos `__init__.py` em `src/harness/` (`domain`, `edge`, `edge/media`, `ingress`, `persistence`, `workers`, `cognition`, `cognition/prompts`, `cognition/retrievers`, `outbound`, `outbound/providers`, `ops`), `scripts/` e `tests/` (`unit`, `integration`, `load`)
+- [X] T002 Criar arquivo `pyproject.toml` na raiz com configuração do `uv`, Python `>=3.13`, dependências homologadas no `plan.md` e configurações estritas do `pytest`, `ruff` e `mypy`
+- [X] T003 [P] Criar `docker-compose.yml` na raiz com o serviço `postgres` utilizando a imagem `pgvector/pgvector:pg16`, healthcheck e volume persistente
+- [X] T004 [P] Criar `.env.example` na raiz e `configs/harness.yaml` com todas as chaves operacionais tipadas (`debounce_seconds`, `max_retries`, `rate_limit`, `llm`, `rag`, `guardrails`, `prompts`, `outbound`)
+- [X] T005 [P] Criar o arquivo de prompt local versionado `configs/prompts/default_agent.yaml` para servir de fallback offline e ambiente de teste (FR-021)
 
 ---
 

@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: whatsapp_harness_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-harness}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-harness_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-whatsapp_harness}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - harness_pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-harness} -d ${POSTGRES_DB:-whatsapp_harness}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  harness_pgdata:
+

@@ -1,0 +1,72 @@
+# ==============================================================================
+# WhatsApp AI Harness — Configuração Operacional (configs/harness.yaml)
+# Precedência: configs/harness.yaml -> Variáveis de Ambiente (.env)
+# ==============================================================================
+
+app:
+  name: "whatsapp-harness-mvp"
+  webhook_host: "0.0.0.0"
+  webhook_port: 8000
+  admin_host: "0.0.0.0"
+  admin_port: 8001
+
+edge:
+  verify_signature: false                  # Em produção: true (valida X-Hub-Signature-256)
+  fast_retry_attempts: 3                   # Tentativas rápidas de escrita no banco (tenacity)
+  fast_retry_initial_wait_ms: 50           # Backoff: 50ms -> 100ms -> 200ms
+  rate_limit_window_seconds: 60            # Janela anti-loop bot-to-bot
+  rate_limit_max_messages: 20              # Máximo de mensagens por minuto por telefone
+  media:
+    audio_enabled: true                    # Converte áudio em texto na borda antes da fila
+    image_enabled: true                    # Descreve imagem em texto na borda antes da fila
+    unsupported_reply_text: "Desculpe, no momento só consigo processar mensagens de texto, áudio ou imagem. Poderia escrever sua dúvida?"
+
+queue:
+  provider: "postgres"                     # Opções via QueuePort: "postgres" | "in_memory"
+  debounce_seconds: 3.0                    # Agrupa mensagens enviadas em < 3s na mesma thread
+  max_retries: 3                           # Após 3 falhas consecutivas, move para 'dead' (DLQ)
+  retry_base_backoff_seconds: 5.0          # Backoff exponencial no worker (5s, 10s, 20s)
+  worker_poll_interval_seconds: 0.5        # Intervalo de polling do worker com SKIP LOCKED
+  worker_concurrency: 4                    # Número de corrotinas concorrentes por processo worker
+
+cognition:
+  agent_mode: "echo"                       # Opções: "echo" (custo zero) | "langgraph" (IA real)
+  context_max_messages_before_summary: 12  # Aciona SummarizationMiddleware acima deste limite
+  daily_token_budget_per_thread: 50000     # TokenBudgetMiddleware por telefone/dia
+  llm:
+    provider: "gemini"                     # Opções na ModelFactory: "gemini" | "openai" | "ollama"
+    model: "gemini-2.5-flash"              # Ex.: "gemini-2.5-flash", "gpt-4o-mini", "llama3.2"
+    temperature: 0.2
+    max_tokens: 1024
+
+guardrails:
+  enabled: true
+  mask_pii_at_edge: true                   # Mascara CPF e cartões na borda antes de enfileirar
+  block_prompt_injection: true             # Nó input_guardrail_node no LangGraph
+  blocked_reply_text: "Desculpe, não posso atender a essa solicitação. Posso ajudar com dúvidas sobre nossos produtos, serviços ou suporte?"
+
+rag:
+  enabled: true
+  provider: "postgres"                     # Opções na VectorStoreFactory: "postgres" (PGVector) | "qdrant" | "in_memory"
+  collection_name: "company_knowledge"
+  embedding_model: "models/text-embedding-004"
+  top_k: 4
+
+prompts:
+  provider: "local_with_langfuse"          # Busca no Langfuse (se configurado) com fallback para YAML local
+  default_prompt_name: "default_agent"
+  default_label: "production"
+  cache_ttl_seconds: 300                   # Cache em memória de 5 minutos (SC-009)
+  local_prompts_dir: "configs/prompts"
+
+outbound:
+  provider: "console"                      # Opções: "console" (imprime no terminal) | "meta" (API real)
+  meta_api_version: "v21.0"
+  timeout_seconds: 10.0
+
+observability:
+  log_level: "INFO"
+  json_logs: false                         # Em produção: true (formato JSON estruturado)
+  langfuse_enabled: false                  # Ative quando preencher LANGFUSE_PUBLIC_KEY no .env
+  otel_enabled: true
+
