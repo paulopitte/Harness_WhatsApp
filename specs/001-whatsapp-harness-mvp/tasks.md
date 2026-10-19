@@ -89,17 +89,17 @@ description: "Lista de tarefas executáveis e ordenadas por dependência para o 
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T028 [P] [US2] Criar testes unitários para `ModelFactory`, bloqueio de Prompt Injection nos Guardrails e enforcement de `TokenBudgetMiddleware` em `tests/unit/test_guardrails_and_middlewares.py`
-- [ ] T029 [P] [US2] Criar testes de integração do pipeline do worker cobrindo retries exponenciais e transição para Business DLQ (`status = 'dead'`) em `tests/integration/test_worker_pipeline_retry_dlq.py`
+- [X] T028 [P] [US2] Criar testes unitários para `ModelFactory`, bloqueio de Prompt Injection nos Guardrails e enforcement de `TokenBudgetMiddleware` em `tests/unit/test_guardrails_and_middlewares.py`
+- [X] T029 [P] [US2] Criar testes de integração do pipeline do worker cobrindo retries exponenciais e transição para Business DLQ (`status = 'dead'`) em `tests/integration/test_worker_pipeline_retry_dlq.py`
 
 ### Implementation for User Story 2
 
-- [ ] T030 [P] [US2] Implementar trava anti-loop bot-to-bot e rate limit por janela de tempo na tabela `threads` em `src/harness/edge/rate_limit.py`
-- [ ] T031 [P] [US2] Implementar `ModelFactory` agnóstica instanciando modelos `gemini`, `openai` ou `ollama` a partir da configuração em `src/harness/cognition/factory.py`
-- [ ] T032 [P] [US2] Implementar nós `input_guardrail_node` (detecção de Prompt Injection e fuga de escopo) e `output_guardrail_node` (prevenção de vazamento de prompt interno) em `src/harness/cognition/guardrails.py`
-- [ ] T033 [US2] Implementar pipeline de Middlewares (`LatencyTrackingMiddleware`, `TokenBudgetMiddleware`, `AuditRunMiddleware`) estilo MediatR Pipeline Behavior em `src/harness/cognition/middlewares.py`
-- [ ] T034 [US2] Implementar `LangGraphCognitionEngine` compilando o `StateGraph` completo e cumprindo `CognitionEngineProtocol` em `src/harness/cognition/graph.py`
-- [ ] T035 [P] [US2] Implementar `MetaOutboundProvider` assíncrono com `httpx` e política de retry em `src/harness/outbound/providers/meta.py`
+- [X] T030 [P] [US2] Implementar trava anti-loop bot-to-bot e rate limit por janela de tempo na tabela `threads` em `src/harness/edge/rate_limit.py`
+- [X] T031 [P] [US2] Implementar `ModelFactory` agnóstica instanciando modelos `gemini`, `openai` ou `ollama` a partir da configuração em `src/harness/cognition/factory.py`
+- [X] T032 [P] [US2] Implementar nós `input_guardrail_node` (detecção de Prompt Injection e fuga de escopo) e `output_guardrail_node` (prevenção de vazamento de prompt interno) em `src/harness/cognition/guardrails.py`
+- [X] T033 [US2] Implementar pipeline de Middlewares (`LatencyTrackingMiddleware`, `TokenBudgetMiddleware`, `AuditRunMiddleware`) estilo MediatR Pipeline Behavior em `src/harness/cognition/middlewares.py`
+- [X] T034 [US2] Implementar `LangGraphCognitionEngine` compilando o `StateGraph` completo e cumprindo `CognitionEngineProtocol` em `src/harness/cognition/graph.py`
+- [X] T035 [P] [US2] Implementar `MetaOutboundProvider` assíncrono com `httpx` e política de retry em `src/harness/outbound/providers/meta.py`
 
 **Checkpoint**: User Stories 1 e 2 completas — Harness operando com LangGraph, Guardrails ativos, Middlewares e múltiplos provedores de LLM.
 

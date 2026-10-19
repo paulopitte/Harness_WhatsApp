@@ -1,6 +1,6 @@
-# 🚀 WhatsApp AI Harness (Production-Grade Framework)
+# 🚀 Arquitetura de uma Harness para Agentes de WhatsApp
 
-> **Scaffolding e Arquitetura de Sustentação de Nível Corporativo para Agentes de IA no WhatsApp em Python 3.13**  
+> **Arquitetura de uma Harness para Agentes de WhatsApp de Nível Corporativo em Python 3.13**  
 > *Baseado em Clean Architecture, Domain-Driven Design (DDD), SOLID e o padrão Ports & Adapters (Hexagonal).*
 
 > [!NOTE]
