@@ -104,7 +104,7 @@ async def test_langgraph_engine_with_middlewares_and_guardrails() -> None:
         [
             AuditRunMiddleware(run_repo),
             LatencyTrackingMiddleware(),
-            TokenBudgetMiddleware(budget_store, daily_limit=100),
+            TokenBudgetMiddleware(budget_store, daily_limit=5000),
         ]
     )
     engine = LangGraphCognitionEngine(
@@ -112,7 +112,7 @@ async def test_langgraph_engine_with_middlewares_and_guardrails() -> None:
         middleware_pipeline=pipeline,
         guardrails_config=settings.guardrails,
     )
-    thread = ThreadId("whatsapp:5511999990000")
+    thread = ThreadId("wa:5511999990000")
 
     # 1. Turno legítimo deve invocar o modelo, registrar tokens e salvar auditoria SUCCESS
     reply_ok = await engine.generate_reply(thread, "Quero saber sobre planos corporativos.")

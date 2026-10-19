@@ -40,8 +40,8 @@ def _make_sample_message(msg_id: str = "wamid.dlq.1", text: str = "Olá, preciso
     phone = PhoneNumber("5511966665555")
     return NormalizedTextMessage(
         provider_message_id=msg_id,
-        thread_id=ThreadId.from_phone(phone),
-        phone_number=phone,
+        thread_id=str(ThreadId.from_phone(phone)),
+        sender_phone=str(phone),
         text_content=text,
         original_media_type=MediaType.TEXT,
     )

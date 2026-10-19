@@ -1,16 +1,18 @@
-"""Pipeline Extensível de Middlewares do Agente (`cognition/middlewares.py` — FR-017, T033).
+"""Pipeline Extensível de Middlewares do Agente (`cognition/middlewares.py` — FR-014, FR-017, T033, T038).
 
 Equivalente no C#/.NET: `IPipelineBehavior<TRequest, TResponse>` do **MediatR** ou
 `DelegatingHandler` do `HttpClient`.
 Permite interceptar cada execução do agente (antes e depois do grafo LangGraph) para:
 1. `LatencyTrackingMiddleware`: Medir a duração exata em milissegundos (`time.perf_counter`).
 2. `TokenBudgetMiddleware`: Controlar e impor o orçamento diário de tokens por `thread_id`.
-3. `AuditRunMiddleware`: Persistir o `AgentRunRecord` completo na tabela `agent_runs` (ou em memória).
+3. `ConversationMemoryMiddleware`: Carregar/atualizar Dupla Memória (`thread_messages`, `conversation_summary` e `semantic_facts`) com auto-sumarização (FR-014).
+4. `AuditRunMiddleware`: Persistir o `AgentRunRecord` completo na tabela `agent_runs` (ou em memória).
 """
 
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+import re
 import time
 from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
@@ -21,6 +23,7 @@ from psycopg_pool import AsyncConnectionPool
 from harness.domain.events import AgentRunRecord
 from harness.domain.exceptions import TokenBudgetExceededError
 from harness.domain.value_objects import RunStatus, ThreadId
+from harness.persistence.threads_repo import ThreadsRepositoryProtocol
 
 
 @dataclass
@@ -40,6 +43,9 @@ class MiddlewareContext:
     guardrail_triggered: bool = False
     guardrail_reason: str | None = None
     status: RunStatus = RunStatus.SUCCESS
+    conversation_summary: str = ""
+    conversation_history: list[dict[str, str]] = field(default_factory=list)
+    semantic_facts: dict[str, str] = field(default_factory=dict)
 
 
 NextMiddlewareCallable = Callable[[MiddlewareContext], Awaitable[str]]
@@ -124,7 +130,7 @@ class PostgresTokenBudgetStore:
     async def add_daily_tokens(self, thread_id: str, tokens: int) -> int:
         now = datetime.now(UTC)
         day_cutoff = now - timedelta(days=1)
-        phone_guess = thread_id.replace("whatsapp:", "")
+        phone_guess = ThreadId(thread_id).phone_number
         async with self._pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor(row_factory=dict_row) as cur:
@@ -223,7 +229,135 @@ class PostgresAgentRunRepository:
 
 
 # ==============================================================================
-# 3. Implementações Concretas dos Middlewares (`Latency`, `TokenBudget`, `Audit`)
+# 3. Extração Determinística + Sumarização de Dupla Memória (`T038`)
+# ==============================================================================
+
+_FACT_EXTRACTORS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "nome_cliente",
+        re.compile(
+            r"\b(?:meu\s+nome\s+[eé]|me\s+chamo|sou\s+o|sou\s+a)\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)?)",
+        ),
+    ),
+    (
+        "empresa",
+        re.compile(
+            r"\b(?:trabalho\s+na|minha\s+empresa\s+[eé]\s+a?|sou\s+da\s+empresa)\s+([A-Za-zÀ-ÿ0-9_\-\s]{2,35}?)(?:[.,;!\n]|$)",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "plano_interesse",
+        re.compile(
+            r"\b(?:interesse\s+no\s+plano|quero\s+o\s+plano|contratar\s+o\s+plano)\s+(starter|growth|enterprise)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "preferencia_contato",
+        re.compile(
+            r"\b(?:prefiro\s+contato\s+por|prefiro\s+atendimento\s+por|gosto\s+de)\s+([A-Za-zÀ-ÿ0-9\s]{3,30}?)(?:[.,;!\n]|$)",
+            re.IGNORECASE,
+        ),
+    ),
+)
+
+
+def extract_semantic_facts_from_text(user_text: str) -> dict[str, str]:
+    """Extrai fatos duráveis sobre o cliente a partir da mensagem de entrada (Memória Semântica)."""
+    extracted: dict[str, str] = {}
+    for fact_key, pattern in _FACT_EXTRACTORS:
+        match = pattern.search(user_text)
+        if match:
+            val = match.group(1).strip(" .,;!")
+            if val:
+                extracted[fact_key] = val
+    return extracted
+
+
+def build_compact_summary(
+    previous_summary: str,
+    messages_to_summarize: list[dict[str, str]],
+) -> str:
+    """Compacta mensagens antigas em um resumo conciso de domínio gastando o mínimo de tokens."""
+    highlights: list[str] = []
+    if previous_summary.strip():
+        highlights.append(previous_summary.strip())
+
+    user_points = [
+        m["content"].strip()
+        for m in messages_to_summarize
+        if m.get("role") == "user" and m.get("content")
+    ]
+    if user_points:
+        joined_points = " | ".join(p[:100] for p in user_points[-6:])
+        highlights.append(f"Tópicos abordados pelo cliente: {joined_points}")
+
+    return " — ".join(highlights)
+
+
+class ConversationMemoryMiddleware:
+    """Gerencia a Dupla Memória (`thread_messages`, `conversation_summary` e `semantic_facts` — FR-014, T038)."""
+
+    def __init__(
+        self,
+        threads_repo: ThreadsRepositoryProtocol,
+        *,
+        max_messages_before_summary: int = 12,
+        keep_recent_after_summary: int = 2,
+    ) -> None:
+        self._repo = threads_repo
+        self._max_messages = max(4, max_messages_before_summary)
+        self._keep_recent = max(1, keep_recent_after_summary)
+
+    async def invoke(
+        self,
+        context: MiddlewareContext,
+        call_next: NextMiddlewareCallable,
+    ) -> str:
+        thread_key = str(context.thread_id)
+        thread = await self._repo.get_or_create_thread(thread_key)
+
+        # 1. Extrai e persiste novos fatos semânticos duráveis se presentes na mensagem atual
+        new_facts = extract_semantic_facts_from_text(context.user_text)
+        for fact_k, fact_v in new_facts.items():
+            await self._repo.upsert_semantic_fact(thread_key, fact_k, fact_v)
+
+        # 2. Carrega fatos semânticos, resumo acumulado e janela ativa para o contexto do grafo
+        context.semantic_facts = await self._repo.get_semantic_facts(thread_key)
+        context.conversation_summary = thread.conversation_summary
+        active_msgs = await self._repo.get_active_messages(thread_key)
+        context.conversation_history = [
+            {"role": m.role, "content": m.content} for m in active_msgs
+        ]
+
+        # 3. Executa o grafo de cognição
+        reply = await call_next(context)
+
+        # 4. Se não houve bloqueio de Guardrail, salva o turno e verifica política de auto-sumarização
+        if not context.guardrail_triggered:
+            await self._repo.append_message(thread_key, "user", context.user_text)
+            await self._repo.append_message(thread_key, "assistant", reply)
+
+            updated_active = await self._repo.get_active_messages(thread_key)
+            if len(updated_active) >= self._max_messages:
+                older_slice = updated_active[: -self._keep_recent]
+                new_summary = build_compact_summary(
+                    thread.conversation_summary,
+                    [{"role": m.role, "content": m.content} for m in older_slice],
+                )
+                await self._repo.compact_messages_with_summary(
+                    thread_key,
+                    new_summary,
+                    keep_recent=self._keep_recent,
+                )
+                context.conversation_summary = new_summary
+
+        return reply
+
+
+# ==============================================================================
+# 4. Implementações Concretas dos Middlewares (`Latency`, `TokenBudget`, `Audit`)
 # ==============================================================================
 
 
@@ -363,4 +497,3 @@ class MiddlewarePipeline:
             chain = _step
 
         return await chain(context)
-

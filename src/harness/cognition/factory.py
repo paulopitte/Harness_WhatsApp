@@ -128,10 +128,16 @@ class DeterministicStubChatModelAdapter:
         conversation_history: list[dict[str, str]] | None = None,
     ) -> LlmCompletionResult:
         history_len = len(conversation_history) if conversation_history else 0
+        rag_marker = "## Contexto Institucional Recuperado (RAG):"
+        rag_suffix = ""
+        if rag_marker in system_prompt:
+            rag_part = system_prompt.split(rag_marker, 1)[1].strip()
+            rag_suffix = f" | Base RAG: {rag_part[:180]}"
+
         reply = (
             f"[{self._provider_name}:{self._model_name}] "
             f"Recebi sua mensagem: '{user_message}'. "
-            f"(Contexto ativo: {history_len} msgs)."
+            f"(Contexto ativo: {history_len} msgs).{rag_suffix}"
         )
         prompt_tokens = max(10, len(system_prompt.split()) + len(user_message.split()))
         completion_tokens = max(8, len(reply.split()))

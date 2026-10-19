@@ -14,16 +14,18 @@ _PROMPT_INJECTION_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "prompt_injection_ignore_instructions",
         re.compile(
-            r"\b(ignore\s+(all\s+|todas\s+as\s+)?(previous|prior|above|anteriores|suas)\s+"
-            r"(instructions|instru[cç][oõ]es|regras|rules|diretrizes))\b",
+            r"\bignore\s+(?:all\s+|todas\s+as\s+|as\s+|suas\s+)?"
+            r"(?:(?:previous|prior|above|anteriores)\s+(?:instructions|instru[cç][oõ]es|regras|rules|diretrizes)"
+            r"|(?:instructions|instru[cç][oõ]es|regras|rules|diretrizes)\s+(?:previous|prior|above|anteriores))\b",
             re.IGNORECASE,
         ),
     ),
     (
         "prompt_injection_system_reveal",
         re.compile(
-            r"\b(reveal|mostre|exiba|repita|print|dump)\s+"
-            r"(your|seu|o\s+seu|the)?\s*(system\s+prompt|prompt\s+de\s+sistema|instru[cç][oõ]es\s+internas)\b",
+            r"\b(reveal|revele|mostre|exiba|repita|print|dump)\s+"
+            r"(?:your\s+|seu\s+|o\s+seu\s+|o\s+|the\s+)?"
+            r"(system\s+prompt|prompt\s+de\s+sistema|instru[cç][oõ]es\s+internas)\b",
             re.IGNORECASE,
         ),
     ),

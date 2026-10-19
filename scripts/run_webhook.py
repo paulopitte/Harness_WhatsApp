@@ -24,6 +24,7 @@ def create_production_webhook_app() -> FastAPI:
             queue_enqueuer=container.queue_enqueuer,
             quarantine_repo=container.quarantine_repo,
             outbound_sender=container.outbound_sender,
+            media_resolver=container.media_router.resolve_to_text,
             rate_limiter=container.rate_limiter.check_and_increment,
         )
         app.router.routes.extend(inner_app.router.routes)

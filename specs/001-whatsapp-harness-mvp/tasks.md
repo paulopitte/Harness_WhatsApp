@@ -113,15 +113,15 @@ description: "Lista de tarefas executáveis e ordenadas por dependência para o 
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T036 [P] [US3] Criar testes unitários e de integração para auto-sumarização de histórico, persistência de `semantic_facts`, `VectorStoreFactory` e roteador de mídia na borda em `tests/integration/test_memory_rag_and_media.py`
+- [X] T036 [P] [US3] Criar testes unitários e de integração para auto-sumarização de histórico, persistência de `semantic_facts`, `VectorStoreFactory` e roteador de mídia na borda em `tests/integration/test_memory_rag_and_media.py`
 
 ### Implementation for User Story 3
 
-- [ ] T037 [P] [US3] Implementar `ThreadsRepository` (leitura/escrita de histórico `thread_messages`, atualização de `conversation_summary` e upsert de `semantic_facts`) em `src/harness/persistence/threads_repo.py`
-- [ ] T038 [US3] Integrar auto-sumarização de janela de contexto e extração/injeção de fatos semânticos no grafo em `src/harness/cognition/middlewares.py` e `src/harness/cognition/graph.py`
-- [ ] T039 [P] [US3] Implementar `VectorStoreFactory` e adaptadores cumprindo `RetrieverPort` (`PGVectorRetrieverAdapter`, `QdrantRetrieverAdapter`, `InMemoryRetrieverAdapter`) em `src/harness/cognition/retrievers/factory.py`
-- [ ] T040 [US3] Adicionar ferramenta (Tool) `search_company_knowledge` ao agente LangGraph em `src/harness/cognition/graph.py` e criar script de indexação `scripts/seed_knowledge.py`
-- [ ] T041 [P] [US3] Implementar roteador de mídia na borda (`text | audio | image | unsupported`) e conversores `AudioTranscriber` e `ImageVisionDescriber` em `src/harness/edge/media/router.py`, `src/harness/edge/media/transcribe.py` e `src/harness/edge/media/vision.py`
+- [X] T037 [P] [US3] Implementar `ThreadsRepository` (leitura/escrita de histórico `thread_messages`, atualização de `conversation_summary` e upsert de `semantic_facts`) em `src/harness/persistence/threads_repo.py`
+- [X] T038 [US3] Integrar auto-sumarização de janela de contexto e extração/injeção de fatos semânticos no grafo em `src/harness/cognition/middlewares.py` e `src/harness/cognition/graph.py`
+- [X] T039 [P] [US3] Implementar `VectorStoreFactory` e adaptadores cumprindo `RetrieverPort` (`PGVectorRetrieverAdapter`, `QdrantRetrieverAdapter`, `InMemoryRetrieverAdapter`) em `src/harness/cognition/retrievers/factory.py`
+- [X] T040 [US3] Adicionar ferramenta (Tool) `search_company_knowledge` ao agente LangGraph em `src/harness/cognition/graph.py` e criar script de indexação `scripts/seed_knowledge.py`
+- [X] T041 [P] [US3] Implementar roteador de mídia na borda (`text | audio | image | unsupported`) e conversores `AudioTranscriber` e `ImageVisionDescriber` em `src/harness/edge/media/router.py`, `src/harness/edge/media/transcribe.py` e `src/harness/edge/media/vision.py`
 
 **Checkpoint**: User Stories 1, 2 e 3 completas — Agente com Dupla Memória, RAG unificado no Postgres (`pgvector`) ou `Qdrant` e suporte multimodal na borda.
 

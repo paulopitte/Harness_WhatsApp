@@ -1,4 +1,4 @@
-"""Motor de Cognição em LangGraph (`cognition/graph.py` — FR-010, FR-011, FR-012, T034).
+"""Motor de Cognição em LangGraph (`cognition/graph.py` — FR-010 a FR-014, T034, T038, T040).
 
 Equivalente no C#/.NET: Máquina de Estados / Orquestrador (`SemanticKernel` Process Framework ou `Stateless`)
 envolto por `MiddlewarePipeline` (MediatR `IPipelineBehavior`).
@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, TypedDict
 from uuid import UUID
 
+from langchain_core.tools import BaseTool, tool
 from langgraph.graph import END, START, StateGraph
 import yaml
 
@@ -46,6 +47,24 @@ class AgentGraphState(TypedDict, total=False):
     final_reply: str
 
 
+def create_search_company_knowledge_tool(
+    retriever: RetrieverPort,
+    *,
+    top_k: int = 4,
+) -> BaseTool:
+    """Cria a Tool oficial `search_company_knowledge` para consulta RAG institucional (FR-013, T040)."""
+
+    @tool("search_company_knowledge")
+    async def search_company_knowledge(query: str) -> str:
+        """Busca políticas, preços, prazos e informações oficiais na base de conhecimento da empresa."""
+        chunks = await retriever.retrieve_context(query, top_k=top_k)
+        if not chunks:
+            return "Nenhum trecho relevante encontrado na base de conhecimento oficial."
+        return "\n".join(f"- {chunk}" for chunk in chunks)
+
+    return search_company_knowledge
+
+
 def _load_default_local_prompt(prompt_yaml_path: str = "configs/prompts/default_agent.yaml") -> tuple[str, str]:
     """Carrega o template YAML local padrão caso nenhum `PromptProviderPort` tenha sido injetado."""
     path = Path(prompt_yaml_path)
@@ -74,6 +93,7 @@ class LangGraphCognitionEngine:
         retriever: RetrieverPort | None = None,
         prompt_provider: PromptProviderPort | None = None,
         agent_name: str = "default_agent",
+        rag_top_k: int = 4,
     ) -> None:
         self._model = model_adapter
         self._pipeline = middleware_pipeline or MiddlewarePipeline()
@@ -81,6 +101,12 @@ class LangGraphCognitionEngine:
         self._retriever = retriever
         self._prompt_provider = prompt_provider
         self._agent_name = agent_name
+        self._rag_top_k = rag_top_k
+        self.knowledge_tool: BaseTool | None = (
+            create_search_company_knowledge_tool(retriever, top_k=rag_top_k)
+            if retriever is not None
+            else None
+        )
         self._compiled_graph = self._build_graph()
 
     def _build_graph(self) -> Any:
@@ -115,9 +141,9 @@ class LangGraphCognitionEngine:
         return "allowed"
 
     async def _prepare_context_node(self, state: AgentGraphState) -> dict[str, Any]:
-        """Recupera o System Prompt (PromptOps/YAML) e o contexto institucional via RAG se disponíveis."""
+        """Recupera o System Prompt (PromptOps/YAML), injeta Dupla Memória e aciona o RAG (`T038`, `T040`)."""
         user_text = state.get("user_text", "")
-        summary = state.get("conversation_summary", "Sem histórico anterior resumido.")
+        summary = state.get("conversation_summary") or "Sem histórico anterior resumido."
         facts_dict = state.get("semantic_facts") or {}
         facts_str = (
             ", ".join(f"{k}: {v}" for k, v in facts_dict.items())
@@ -141,7 +167,7 @@ class LangGraphCognitionEngine:
 
         rag_chunks: list[str] = []
         if self._retriever is not None and user_text.strip():
-            rag_chunks = await self._retriever.retrieve_context(user_text)
+            rag_chunks = await self._retriever.retrieve_context(user_text, top_k=self._rag_top_k)
             if rag_chunks:
                 joined_rag = "\n- ".join(rag_chunks)
                 system_prompt = (
@@ -192,6 +218,9 @@ class LangGraphCognitionEngine:
             initial_state: AgentGraphState = {
                 "thread_id": str(ctx.thread_id),
                 "user_text": ctx.user_text,
+                "conversation_history": ctx.conversation_history,
+                "conversation_summary": ctx.conversation_summary,
+                "semantic_facts": ctx.semantic_facts,
                 "guardrails_enabled": self._guardrails_cfg.enabled,
                 "block_prompt_injection": self._guardrails_cfg.block_prompt_injection,
                 "blocked_reply_text": self._guardrails_cfg.blocked_reply_text or DEFAULT_BLOCKED_REPLY,
@@ -212,4 +241,3 @@ class LangGraphCognitionEngine:
             return str(result_state.get("final_reply", "")).strip()
 
         return await self._pipeline.execute(context, _run_graph)
-

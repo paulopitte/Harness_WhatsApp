@@ -1,4 +1,4 @@
-"""Composition Root (`app.py` — T026 / T030-T035): Injeção de Dependências conectando Ports e Adapters.
+"""Composition Root (`app.py` — T026 / T030-T041): Injeção de Dependências conectando Ports e Adapters.
 
 Equivalente no C#/.NET: `Program.cs` (`builder.Services.AddSingleton<IQueue, PostgresQueueAdapter>()`).
 Centraliza a montagem de todos os componentes sem espalhar acoplamento concreto pelo sistema (SOLID DIP).
@@ -12,6 +12,7 @@ from harness.cognition.graph import LangGraphCognitionEngine
 from harness.cognition.middlewares import (
     AgentRunRepositoryProtocol,
     AuditRunMiddleware,
+    ConversationMemoryMiddleware,
     InMemoryAgentRunRepository,
     InMemoryTokenBudgetStore,
     LatencyTrackingMiddleware,
@@ -21,12 +22,17 @@ from harness.cognition.middlewares import (
     TokenBudgetMiddleware,
     TokenBudgetStoreProtocol,
 )
+from harness.cognition.retrievers.factory import VectorStoreFactory
 from harness.domain.ports import (
     CognitionEngineProtocol,
     OutboundProviderProtocol,
     QueueConsumerProtocol,
     QueueEnqueuerProtocol,
+    RetrieverPort,
 )
+from harness.edge.media.router import EdgeMediaRouter
+from harness.edge.media.transcribe import AudioTranscriber
+from harness.edge.media.vision import ImageVisionDescriber
 from harness.edge.rate_limit import (
     InMemoryRateLimiter,
     PostgresRateLimiter,
@@ -38,6 +44,11 @@ from harness.ingress.postgres_queue import InMemoryQueueAdapter, PostgresQueueAd
 from harness.outbound.providers.console import ConsoleOutboundProvider
 from harness.outbound.providers.meta import MetaOutboundProvider
 from harness.outbound.sender import OutboundSender
+from harness.persistence.threads_repo import (
+    InMemoryThreadsRepository,
+    PostgresThreadsRepository,
+    ThreadsRepositoryProtocol,
+)
 from harness.settings import HarnessSettings, get_settings
 from harness.workers.pipeline import ProcessQueueItemPipeline
 from harness.workers.runner import WorkerRunner
@@ -53,6 +64,9 @@ class HarnessContainer:
     queue_consumer: QueueConsumerProtocol
     quarantine_repo: QuarantineRepositoryProtocol
     rate_limiter: RateLimiterProtocol
+    media_router: EdgeMediaRouter
+    threads_repo: ThreadsRepositoryProtocol
+    retriever: RetrieverPort
     token_budget_store: TokenBudgetStoreProtocol
     agent_run_repo: AgentRunRepositoryProtocol
     cognition_engine: CognitionEngineProtocol
@@ -71,6 +85,7 @@ async def build_container(
     cfg = settings or get_settings()
 
     db_manager: DatabasePoolManager | None = None
+    pool = None
     if cfg.queue.provider == "postgres" and not force_in_memory:
         db_manager = DatabasePoolManager(cfg.database_url)
         pool = await db_manager.open()
@@ -83,6 +98,7 @@ async def build_container(
             window_seconds=cfg.edge.rate_limit_window_seconds,
             max_messages=cfg.edge.rate_limit_max_messages,
         )
+        threads_repo: ThreadsRepositoryProtocol = PostgresThreadsRepository(pool)
         token_budget_store: TokenBudgetStoreProtocol = PostgresTokenBudgetStore(pool)
         agent_run_repo: AgentRunRepositoryProtocol = PostgresAgentRunRepository(pool)
     else:
@@ -94,8 +110,25 @@ async def build_container(
             window_seconds=cfg.edge.rate_limit_window_seconds,
             max_messages=cfg.edge.rate_limit_max_messages,
         )
+        threads_repo = InMemoryThreadsRepository()
         token_budget_store = InMemoryTokenBudgetStore()
         agent_run_repo = InMemoryAgentRunRepository()
+
+    # Roteador de Mídia na Borda (`text` | `audio` | `image` | `unsupported`)
+    media_router = EdgeMediaRouter(
+        media_config=cfg.edge.media,
+        transcriber=AudioTranscriber(api_key=cfg.google_api_key, model_name=cfg.cognition.llm.model),
+        vision_describer=ImageVisionDescriber(
+            api_key=cfg.google_api_key,
+            model_name=cfg.cognition.llm.model,
+        ),
+    )
+
+    # Busca Vetorial RAG Agnóstica (`postgres` | `qdrant` | `in_memory`)
+    rag_cfg = cfg.rag.model_copy(
+        update={"provider": "in_memory" if force_in_memory else cfg.rag.provider}
+    )
+    retriever = VectorStoreFactory.create(rag_cfg, settings=cfg, pool=pool)
 
     # Provedor Outbound (`console` | `meta`)
     if cfg.outbound.provider == "meta":
@@ -121,13 +154,19 @@ async def build_container(
                     token_budget_store,
                     daily_limit=cfg.cognition.daily_token_budget_per_thread,
                 ),
+                ConversationMemoryMiddleware(
+                    threads_repo,
+                    max_messages_before_summary=cfg.cognition.context_max_messages_before_summary,
+                ),
             ]
         )
         cognition_engine: CognitionEngineProtocol = LangGraphCognitionEngine(
             model_adapter=model_adapter,
             middleware_pipeline=mw_pipeline,
             guardrails_config=cfg.guardrails,
+            retriever=retriever if cfg.rag.enabled else None,
             agent_name=cfg.prompts.default_prompt_name,
+            rag_top_k=cfg.rag.top_k,
         )
     else:
         cognition_engine = EchoCognitionEngine()
@@ -152,6 +191,9 @@ async def build_container(
         queue_consumer=queue_consumer,
         quarantine_repo=quarantine_repo,
         rate_limiter=rate_limiter,
+        media_router=media_router,
+        threads_repo=threads_repo,
+        retriever=retriever,
         token_budget_store=token_budget_store,
         agent_run_repo=agent_run_repo,
         cognition_engine=cognition_engine,

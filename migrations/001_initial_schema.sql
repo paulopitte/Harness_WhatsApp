@@ -107,3 +107,13 @@ CREATE TABLE IF NOT EXISTS agent_runs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 8. Base de Conhecimento Institucional Vetorial (RAG via pgvector — FR-013)
+CREATE TABLE IF NOT EXISTS knowledge_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    collection_name VARCHAR(64) NOT NULL DEFAULT 'company_knowledge',
+    content TEXT NOT NULL,
+    embedding vector(64) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
