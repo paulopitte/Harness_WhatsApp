@@ -38,16 +38,16 @@ description: "Lista de tarefas executáveis e ordenadas por dependência para o 
 
 **⚠️ CRITICAL**: Nenhuma User Story pode ser iniciada antes da conclusão desta fase fundacional.
 
-- [ ] T006 [P] Implementar hierarquia de exceções de domínio (`HarnessDomainError`, `SignatureVerificationError`, `PayloadNormalizationError`, `RateLimitExceededError`, `UnsupportedMediaError`, `GuardrailBlockedError`, `TokenBudgetExceededError`, `OutboundDeliveryError`) em `src/harness/domain/exceptions.py`
-- [ ] T007 [P] Implementar Value Objects imutáveis (`PhoneNumber`, `ThreadId`) e Enums (`QueueStatus`, `ThreadMode`, `MediaType`) em `src/harness/domain/value_objects.py`
-- [ ] T008 [P] Implementar contratos de mensagem (`InboundWebhookPayload`, `NormalizedTextMessage` com `ConfigDict(frozen=True, strict=True)`) em `src/harness/domain/message.py`
-- [ ] T009 [P] Implementar entidades de estado (`Thread`, `SemanticFact`) em `src/harness/domain/thread.py` e entidades de fila/quarentena (`QueueItem`, `QuarantineEntry`) em `src/harness/domain/queue.py`
-- [ ] T010 [P] Implementar modelos de eventos operacionais e auditoria (`AgentRunRecord`, `QueueStats`) em `src/harness/domain/events.py`
-- [ ] T011 Implementar todas as interfaces segregadas (`QueueEnqueuerProtocol`, `QueueConsumerProtocol`, `OutboundProviderProtocol`, `RetrieverPort`, `PromptProviderPort`, `CognitionEngineProtocol`) em `src/harness/domain/ports.py`
-- [ ] T012 Implementar carregamento hierárquico de configurações (`configs/harness.yaml` + `.env`) com validação Pydantic em `src/harness/settings.py`
-- [ ] T013 Criar script DDL idempotente `migrations/001_initial_schema.sql` com as extensões `pgcrypto` e `vector` e as 7 tabelas (`threads`, `inbound_dedup`, `quarantine_inbound`, `queue_items`, `thread_messages`, `semantic_facts`, `agent_runs`) e índices parciais
-- [ ] T014 Implementar gerenciador de `AsyncConnectionPool` (`psycopg` v3) em `src/harness/ingress/database.py` e utilitário de migração inicial em `scripts/init_db.py`
-- [ ] T015 Criar testes unitários validando Value Objects, imutabilidade de `NormalizedTextMessage` e carregamento do `settings.py` em `tests/unit/test_domain_models.py`
+- [X] T006 [P] Implementar hierarquia de exceções de domínio (`HarnessDomainError`, `SignatureVerificationError`, `PayloadNormalizationError`, `RateLimitExceededError`, `UnsupportedMediaError`, `GuardrailBlockedError`, `TokenBudgetExceededError`, `OutboundDeliveryError`) em `src/harness/domain/exceptions.py`
+- [X] T007 [P] Implementar Value Objects imutáveis (`PhoneNumber`, `ThreadId`) e Enums (`QueueStatus`, `ThreadMode`, `MediaType`) em `src/harness/domain/value_objects.py`
+- [X] T008 [P] Implementar contratos de mensagem (`InboundWebhookPayload`, `NormalizedTextMessage` com `ConfigDict(frozen=True, strict=True)`) em `src/harness/domain/message.py`
+- [X] T009 [P] Implementar entidades de estado (`Thread`, `SemanticFact`) em `src/harness/domain/thread.py` e entidades de fila/quarentena (`QueueItem`, `QuarantineEntry`) em `src/harness/domain/queue.py`
+- [X] T010 [P] Implementar modelos de eventos operacionais e auditoria (`AgentRunRecord`, `QueueStats`) em `src/harness/domain/events.py`
+- [X] T011 Implementar todas as interfaces segregadas (`QueueEnqueuerProtocol`, `QueueConsumerProtocol`, `OutboundProviderProtocol`, `RetrieverPort`, `PromptProviderPort`, `CognitionEngineProtocol`) em `src/harness/domain/ports.py`
+- [X] T012 Implementar carregamento hierárquico de configurações (`configs/harness.yaml` + `.env`) com validação Pydantic em `src/harness/settings.py`
+- [X] T013 Criar script DDL idempotente `migrations/001_initial_schema.sql` com as extensões `pgcrypto` e `vector` e as 7 tabelas (`threads`, `inbound_dedup`, `quarantine_inbound`, `queue_items`, `thread_messages`, `semantic_facts`, `agent_runs`) e índices parciais
+- [X] T014 Implementar gerenciador de `AsyncConnectionPool` (`psycopg` v3) em `src/harness/ingress/database.py` e utilitário de migração inicial em `scripts/init_db.py`
+- [X] T015 Criar testes unitários validando Value Objects, imutabilidade de `NormalizedTextMessage` e carregamento do `settings.py` em `tests/unit/test_domain_models.py`
 
 **Checkpoint**: Fundação pronta — Domínio puro validado, contratos definidos e banco de dados estruturado.
 
