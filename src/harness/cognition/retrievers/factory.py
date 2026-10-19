@@ -105,7 +105,7 @@ class InMemoryRetrieverAdapter:
 
 
 class PGVectorRetrieverAdapter:
-    """Adaptador RAG nativo apoiado em PostgreSQL 16 + extensão `pgvector` (`vector(64)`)."""
+    """Adaptador RAG nativo apoiado em PostgreSQL 16 + extensão `pgvector` (ou fallback `JSONB` em Postgres local sem a extensão)."""
 
     def __init__(
         self,
@@ -115,22 +115,55 @@ class PGVectorRetrieverAdapter:
     ) -> None:
         self._pool = pool
         self._collection_name = collection_name
+        self._has_pgvector: bool | None = None
 
     async def ensure_table(self) -> None:
+        if self._has_pgvector is not None:
+            return
         async with self._pool.connection() as conn:
-            async with conn.transaction():
-                async with conn.cursor() as cur:
-                    await cur.execute(
-                        """
-                        CREATE TABLE IF NOT EXISTS knowledge_chunks (
-                            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                            collection_name VARCHAR(64) NOT NULL DEFAULT 'company_knowledge',
-                            content TEXT NOT NULL,
-                            embedding vector(64) NOT NULL,
-                            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-                        );
-                        """
-                    )
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(
+                    """
+                    SELECT data_type, udt_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'knowledge_chunks' AND column_name = 'embedding';
+                    """
+                )
+                col = await cur.fetchone()
+                if col is not None:
+                    self._has_pgvector = col["udt_name"] == "vector"
+                    return
+
+            try:
+                async with conn.transaction():
+                    async with conn.cursor() as cur:
+                        await cur.execute(
+                            """
+                            CREATE TABLE IF NOT EXISTS knowledge_chunks (
+                                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                collection_name VARCHAR(64) NOT NULL DEFAULT 'company_knowledge',
+                                content TEXT NOT NULL,
+                                embedding vector(64) NOT NULL,
+                                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                            );
+                            """
+                        )
+                self._has_pgvector = True
+            except Exception:
+                async with conn.transaction():
+                    async with conn.cursor() as cur:
+                        await cur.execute(
+                            """
+                            CREATE TABLE IF NOT EXISTS knowledge_chunks (
+                                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                collection_name VARCHAR(64) NOT NULL DEFAULT 'company_knowledge',
+                                content TEXT NOT NULL,
+                                embedding JSONB NOT NULL,
+                                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                            );
+                            """
+                        )
+                self._has_pgvector = False
 
     async def seed_documents(self, documents: list[str]) -> int:
         await self.ensure_table()
@@ -148,13 +181,22 @@ class PGVectorRetrieverAdapter:
                             continue
                         emb = compute_deterministic_embedding(cleaned)
                         vec_literal = "[" + ",".join(str(x) for x in emb) + "]"
-                        await cur.execute(
-                            """
-                            INSERT INTO knowledge_chunks (collection_name, content, embedding)
-                            VALUES (%s, %s, %s::vector);
-                            """,
-                            (self._collection_name, cleaned, vec_literal),
-                        )
+                        if self._has_pgvector:
+                            await cur.execute(
+                                """
+                                INSERT INTO knowledge_chunks (collection_name, content, embedding)
+                                VALUES (%s, %s, %s::vector);
+                                """,
+                                (self._collection_name, cleaned, vec_literal),
+                            )
+                        else:
+                            await cur.execute(
+                                """
+                                INSERT INTO knowledge_chunks (collection_name, content, embedding)
+                                VALUES (%s, %s, %s::jsonb);
+                                """,
+                                (self._collection_name, cleaned, vec_literal),
+                            )
                         added += 1
         return added
 
@@ -167,18 +209,37 @@ class PGVectorRetrieverAdapter:
 
         async with self._pool.connection() as conn:
             async with conn.cursor(row_factory=dict_row) as cur:
+                if self._has_pgvector:
+                    await cur.execute(
+                        """
+                        SELECT content, (1 - (embedding <=> %s::vector)) AS similarity
+                        FROM knowledge_chunks
+                        WHERE collection_name = %s
+                        ORDER BY embedding <=> %s::vector ASC
+                        LIMIT %s;
+                        """,
+                        (vec_literal, self._collection_name, vec_literal, top_k),
+                    )
+                    rows = await cur.fetchall()
+                    return [str(r["content"]) for r in rows if float(r["similarity"]) > 0.0]
+
                 await cur.execute(
                     """
-                    SELECT content, (1 - (embedding <=> %s::vector)) AS similarity
+                    SELECT content, embedding
                     FROM knowledge_chunks
-                    WHERE collection_name = %s
-                    ORDER BY embedding <=> %s::vector ASC
-                    LIMIT %s;
+                    WHERE collection_name = %s;
                     """,
-                    (vec_literal, self._collection_name, vec_literal, top_k),
+                    (self._collection_name,),
                 )
                 rows = await cur.fetchall()
-                return [str(r["content"]) for r in rows if float(r["similarity"]) > 0.0]
+                scored: list[tuple[float, str]] = []
+                for r in rows:
+                    doc_vec = [float(x) for x in (r["embedding"] or [])]
+                    sim = _cosine_similarity(emb, doc_vec)
+                    if sim > 0.0:
+                        scored.append((sim, str(r["content"])))
+                scored.sort(key=lambda item: item[0], reverse=True)
+                return [doc for _, doc in scored[:top_k]]
 
 
 class QdrantRetrieverAdapter:

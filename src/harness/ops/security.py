@@ -3,19 +3,23 @@
 Equivalente no C#/.NET: `AuthenticationHandler<ApiKeyAuthenticationOptions>` / Endpoint Filter
 que valida o header `X-Admin-Api-Key` em tempo constante (`hmac.compare_digest`) e retorna
 `HTTP 401 Unauthorized` no padrão RFC 9457 (`ProblemDetails`) em português.
+Integra `APIKeyHeader` para habilitar o botão **Authorize** diretamente no Swagger UI (`/docs`).
 """
 
-import hmac
 from collections.abc import Callable
+import hmac
 
-from fastapi import Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import APIKeyHeader
+
+_api_key_header_scheme = APIKeyHeader(name="X-Admin-Api-Key", auto_error=False)
 
 
 def build_admin_api_key_dependency(expected_api_key: str) -> Callable[[str | None], None]:
     """Cria uma dependência FastAPI (`Depends(...)`) que valida o header `X-Admin-Api-Key`."""
 
     def verify_admin_api_key(
-        x_admin_api_key: str | None = Header(default=None, alias="X-Admin-Api-Key"),
+        x_admin_api_key: str | None = Depends(_api_key_header_scheme),
     ) -> None:
         if not x_admin_api_key or not hmac.compare_digest(
             x_admin_api_key.encode("utf-8"),
@@ -32,4 +36,3 @@ def build_admin_api_key_dependency(expected_api_key: str) -> Callable[[str | Non
             )
 
     return verify_admin_api_key
-

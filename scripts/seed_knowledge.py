@@ -13,7 +13,7 @@ from harness.cognition.retrievers.factory import (
     QdrantRetrieverAdapter,
     VectorStoreFactory,
 )
-from harness.ingress.database import DatabasePoolManager
+from harness.ingress.database import DatabasePoolManager, run_with_selector_loop
 from harness.settings import get_settings
 
 
@@ -48,5 +48,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_with_selector_loop(main())
 

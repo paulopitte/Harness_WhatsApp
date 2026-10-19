@@ -42,6 +42,16 @@ def create_admin_app(
     require_api_key = build_admin_api_key_dependency(settings.admin_api_key)
     admin_router = APIRouter(prefix="/admin", dependencies=[Depends(require_api_key)])
 
+    @app.get("/")
+    async def root() -> dict[str, str]:
+        return {
+            "service": "WhatsApp Harness — Admin & Operations API",
+            "status": "running",
+            "docs_url": "/docs",
+            "health_url": "/health",
+            "stats_url": "/admin/queue/stats",
+        }
+
     @app.get("/health")
     async def healthcheck() -> dict[str, str]:
         return {"status": "ok", "component": "ops-admin"}

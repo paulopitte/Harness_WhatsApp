@@ -114,9 +114,26 @@ class HarnessSettings(BaseSettings):
     # Segredos e variáveis de ambiente de infraestrutura
     harness_env: str = Field(default="development")
     harness_config_path: str = Field(default="configs/harness.yaml")
+    postgres_user: str = Field(default="harness")
+    postgres_password: str = Field(default="harness_secret")
+    postgres_db: str = Field(default="whatsapp_harness")
+    postgres_host: str = Field(default="localhost")
+    postgres_port: int = Field(default=5432)
     database_url: str = Field(
         default="postgresql://harness:harness_secret@localhost:5432/whatsapp_harness"
     )
+
+    def model_post_init(self, __context: Any) -> None:
+        default_url = "postgresql://harness:harness_secret@localhost:5432/whatsapp_harness"
+        if self.database_url == default_url and (
+            self.postgres_user != "harness" or self.postgres_password != "harness_secret"
+        ):
+            object.__setattr__(
+                self,
+                "database_url",
+                f"postgresql://{self.postgres_user}:{self.postgres_password}"
+                f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}",
+            )
     whatsapp_verify_token: str = Field(default="dev_verify_token_123")
     whatsapp_app_secret: str = Field(default="dev_app_secret_change_in_prod")
     whatsapp_access_token: str = Field(default="")

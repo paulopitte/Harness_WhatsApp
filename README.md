@@ -27,11 +27,22 @@ Mais de **90% dos agentes de WhatsApp falham quando saem do ambiente de demonstr
 
 ---
 
-## 💡 A Solução: O Conceito de "Harness"
+## 💡 A Solução: O Conceito de "Harness" e Fundamentação Teórica
 
-Em sistemas de inteligência artificial de alta escala, **o modelo (LLM) é tratado como uma commodity intercambiável**. A verdadeira inteligência de engenharia está na **Harness**: todo o scaffolding que protege, recebe, valida, enfileira, controla o contexto, aplica retries e audita o ciclo de vida da mensagem.
+Em sistemas de inteligência artificial de alta escala, **o modelo (LLM) não é o produto — ele é uma commodity intercambiável**. Conforme sistematizado no paper [Externalization in LLM Agents: A Unified Review of Memory, Skills, Protocols and Harness Engineering (arXiv:2604.08224)](https://arxiv.org/abs/2604.08224) e nos estudos de arquitetura de produção para agentes conversacionais, agentes úteis deixam de depender apenas do comportamento interno do modelo e passam a **externalizar** capacidades críticas em quatro pilares:
+1. **Memória (`Memory`)**: Separação explícita entre continuidade operacional da conversa atual e fatos duráveis sobre o usuário.
+2. **Habilidades (`Skills` / `Tools`)**: Ferramentas determinísticas e busca vetorial RAG desacopladas do prompt.
+3. **Protocolos (`Protocols`)**: Contratos formais e interfaces estritas (`typing.Protocol`) nas fronteiras de entrada, fila, cognição e saída.
+4. **Harness (`Coordenação Operacional`)**: A camada de arquitetura que governa como o agente recebe contexto, mantém continuidade, respeita limites de custo/segurança, registra auditoria e evolui sem quebrar o sistema inteiro.
 
-Este projeto implementa uma **Harness de Produção** inspirada na palestra e modelo arquitetural de engenharia de software para agentes no WhatsApp, projetada com o rigor de engenharia de software corporativo (DDD, SOLID, Ports & Adapters) adaptado para o ecossistema moderno do **Python 3.13**.
+### 📈 A Escada de Maturidade em Engenharia de Agentes
+
+| Degrau | Nível de Maturidade | Características | Limitação em Produção no WhatsApp |
+| :--- | :--- | :--- | :--- |
+| **1. Chamada de API** | *Prompt in, Text out* | Chamada direta ao SDK da LLM sem estado. | Sem memória, sem ferramentas e sem resiliência. |
+| **2. App com Agente** | *Wrapper + Tool Use* | Rota HTTP que instancia um agente e aguarda resposta na mesma requisição. | Sofre timeouts na Meta (`> 3s`), duplicação de envios e perda silenciosa sob pressão. |
+| **3. Runtime** | *Orquestração de Grafo* | Uso de `StateGraph` (LangGraph), checkpoints e persistência de sessão. | Resolve a execução do grafo, mas não resolve a mensageria real (rajadas, mídia, DLQ, handoff). |
+| **4. Harness (Este Projeto)** | **Sistema Operável Completo** | **Borda ACL + Fila Transacional (`SKIP LOCKED`) + Debounce Persistido + Dupla Memória + Guardrails + Observabilidade + Admin API.** | **Arquitetura pronta para operação corporativa real.** |
 
 ---
 

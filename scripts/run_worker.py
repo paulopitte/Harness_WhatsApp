@@ -5,6 +5,7 @@ import contextlib
 import signal
 
 from harness.app import build_container
+from harness.ingress.database import run_with_selector_loop
 from harness.settings import get_settings
 
 
@@ -30,7 +31,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        run_with_selector_loop(main())
     except KeyboardInterrupt:
         print("\n[WorkerRunner] Encerrado pelo usuário.")
 

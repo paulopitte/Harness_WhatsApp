@@ -1,10 +1,9 @@
 """Script utilitário para aplicar o schema inicial do banco PostgreSQL 16 + pgvector."""
 
-import asyncio
-import sys
 from pathlib import Path
+import sys
 
-from harness.ingress.database import DatabasePoolManager
+from harness.ingress.database import DatabasePoolManager, run_with_selector_loop
 from harness.settings import get_settings
 
 
@@ -25,5 +24,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
-
+    run_with_selector_loop(main())

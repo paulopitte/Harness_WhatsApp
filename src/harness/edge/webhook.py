@@ -67,6 +67,16 @@ def create_webhook_app(
     router = APIRouter()
     resolve_media = media_resolver or _default_media_resolver
 
+    @router.get("/")
+    async def root() -> dict[str, str]:
+        return {
+            "service": "WhatsApp Harness — Edge Webhook API",
+            "status": "running",
+            "docs_url": "/docs",
+            "health_url": "/health",
+            "webhook_url": "/webhook",
+        }
+
     @router.get("/health")
     async def healthcheck() -> dict[str, str]:
         return {"status": "ok", "component": "edge-webhook"}

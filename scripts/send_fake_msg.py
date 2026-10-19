@@ -98,7 +98,12 @@ async def main() -> None:
     parser.add_argument("--url", default="http://localhost:8000/webhook", help="URL do webhook local")
     parser.add_argument("--phone", default="5511999998888", help="Telefone do remetente")
     parser.add_argument("--text", default="Olá, gostaria de conhecer os planos!", help="Texto da mensagem")
-    parser.add_argument("--burst", nargs="+", help="Dispara uma rajada de mensagens rápidas para testar o Debounce")
+    parser.add_argument(
+        "--burst",
+        nargs="*",
+        default=None,
+        help="Dispara uma rajada de mensagens rápidas para testar o Debounce",
+    )
     parser.add_argument("--duplicate", action="store_true", help="Envia o mesmo provider_message_id 2 vezes")
     parser.add_argument("--corrupt", action="store_true", help="Envia um JSON corrompido para testar a Edge DLQ")
     parser.add_argument("--media-type", default="text", choices=["text", "audio", "image", "video"])
@@ -118,8 +123,14 @@ async def main() -> None:
             )
             return
 
-        if args.burst:
-            for idx, msg_text in enumerate(args.burst, start=1):
+        if args.burst is not None:
+            burst_list = args.burst or [
+                "Oi!",
+                "Tudo bem?",
+                "Meu nome é Paulo Pitte e trabalho na TechCorp.",
+                "Quais são os planos corporativos e preços?",
+            ]
+            for idx, msg_text in enumerate(burst_list, start=1):
                 payload = build_meta_payload(args.phone, msg_text, msg_type=args.media_type)
                 raw = json.dumps(payload).encode("utf-8")
                 await send_payload(client, args.url, raw, secret, f"BURST #{idx}: '{msg_text}'")
