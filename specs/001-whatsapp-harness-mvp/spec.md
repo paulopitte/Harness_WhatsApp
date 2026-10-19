@@ -77,6 +77,7 @@ Como operador de suporte e engenheiro de confiabilidade, quero acompanhar a tele
 3. **Given** itens com status `dead` na fila após falhas transitórias resolvidas, **When** o operador dispara o comando de reprocessamento via API administrativa, **Then** os itens voltam para o status `pending` com contador de tentativas zerado.
 4. **Given** uma tentativa de ataque de Prompt Injection ou pergunta fora do escopo corporativo, **When** a mensagem atinge o nó de Input Guardrail no LangGraph, **Then** a requisição é interceptada imediatamente com resposta de recusa pré-definida, sem invocar o agente principal nem consumir ferramentas RAG.
 5. **Given** a execução de nós no grafo LangGraph, **When** a mensagem passa pelo pipeline de Middlewares, **Then** o Middleware de Auditoria e Custos registra a latência exata, calcula os tokens consumidos e valida se o orçamento da thread foi respeitado.
+6. **Given** a necessidade de ajustar o tom de voz ou regras do agente em produção, **When** o operador altera a versão do prompt ativo ou faz rollback para uma versão anterior no Langfuse, **Then** o sistema adota o novo prompt sem necessidade de redeploy de código nem reinicialização dos workers, mantendo fallback para arquivos locais (`configs/prompts/*.yaml`) em caso de indisponibilidade externa.
 
 ---
 
@@ -85,7 +86,7 @@ Como operador de suporte e engenheiro de confiabilidade, quero acompanhar a tele
 - **Queda de Conexão com o Postgres durante o Webhook:** O fast-retry em memória (estilo Polly via `tenacity`) realiza até 3 tentativas com backoff ultracurto (50ms, 100ms, 200ms). Se o banco permanecer inacessível, a borda responde HTTP 503 para acionar a política nativa de retransmissão da Meta.
 - **Payload com Mídia Não Suportada (ex.: Vídeo pesado ou executável):** A borda rejeita o enfileiramento de cognição e agenda o envio de uma mensagem de texto pré-fabricada de recusa educada ao usuário, sem invocar a LLM.
 - **Cliente enviando mensagens enquanto o Worker está processando o turno anterior:** Se o status da thread já for `processing`, as novas mensagens recebidas são enfileiradas com `scheduled_for` para o término da janela atual, evitando execuções encavaladas no mesmo `thread_id`.
-- **Indisponibilidade temporária do Vector Store (PGVector/Qdrant) ou Langfuse:** Falhas no motor de busca vetorial ou na telemetria devem falhar de forma graciosa (*graceful degradation*), logando o erro sem derrubar o atendimento básico do cliente.
+- **Indisponibilidade temporária do Vector Store (PGVector/Qdrant) ou Langfuse:** Falhas no motor de busca vetorial ou na telemetria devem falhar de forma graciosa (*graceful degradation*), logando o erro sem derrubar o atendimento básico do cliente. Se o Langfuse estiver inacessível, os prompts são carregados automaticamente do armazenamento local em disco.
 
 ## Requirements *(mandatory)*
 
@@ -111,6 +112,7 @@ Como operador de suporte e engenheiro de confiabilidade, quero acompanhar a tele
 - **FR-018**: O sistema DEVE fornecer endpoints administrativos protegidos para consulta de status da fila, métricas operacionais e reprocessamento de mensagens da DLQ.
 - **FR-019**: O sistema DEVE implementar Guardrails de segurança em duas camadas: na borda (sanitização de PII e caracteres maliciosos) e no grafo LangGraph (nó de Input Guardrail para detecção de prompt injection / fuga de escopo e nó de Output Guardrail para prevenção de vazamento de dados do sistema), impedindo chamadas desnecessárias a modelos caros.
 - **FR-020**: A camada de cognição DEVE implementar um pipeline extensível de Middlewares (estilo Pipeline Behaviors / Callbacks do LangChain e LangGraph) para interceptação de ciclo de vida: cálculo de latência, auditoria de tokens/custos, verificação de teto de orçamento diário por thread e logs estruturados.
+- **FR-021**: O sistema DEVE gerenciar os prompts dos agentes de forma desacoplada através de uma porta `PromptProviderPort`, utilizando o Langfuse Prompt Management para controle de versões imutáveis, labels (`production`/`staging`) e rollback em tempo real sem necessidade de redeploy de código, mantendo cache local em memória e mecanismo de fallback para arquivos locais (`configs/prompts/*.yaml`).
 
 ### Key Entities
 
@@ -120,6 +122,7 @@ Como operador de suporte e engenheiro de confiabilidade, quero acompanhar a tele
 - **Thread**: Representação persistente da conversa identificada deterministicamente pelo telefone do usuário (`thread_id`), contendo o status de atendimento (`bot`, `human`), contadores de rate limit e sumário consolidado do histórico.
 - **SemanticFact**: Fato estável aprendido sobre o usuário (chave/valor ou texto), persistido independentemente do histórico recente de mensagens.
 - **QuarantineEntry**: Registro de contingência na borda contendo payload bruto, cabeçalhos HTTP, data e diagnóstico de erro para investigação técnica.
+- **PromptTemplateEntity**: Definição versionada de prompt contendo identificador, versão, label, texto com variáveis de interpolação e hash de integridade.
 
 ## Success Criteria *(mandatory)*
 
@@ -133,6 +136,7 @@ Como operador de suporte e engenheiro de confiabilidade, quero acompanhar a tele
 - **SC-006**: Mensagens com falhas irrecuperáveis ou erros consecutivos atingem a Dead-Letter Queue (DLQ) com diagnóstico completo preservado e podem ser reprocessadas via comando administrativo com recuperação de 100% dos itens elegíveis.
 - **SC-007**: Toda interação executada pelo grafo LangGraph gera um trace correspondente no Langfuse com métricas de tempo de resposta e consumo de tokens registradas.
 - **SC-008**: 100% das tentativas simuladas de prompt injection são interceptadas pelo nó de Guardrail antes do nó principal de raciocínio, registrando o incidente nos logs de auditoria sem onerar a LLM principal.
+- **SC-009**: Alteração ou rollback de versão de prompt realizada no painel do Langfuse reflete no comportamento do agente em menos de 5 minutos (respeitando o cache TTL) sem necessidade de reinício dos workers ou deploy de aplicação.
 
 ## Assumptions
 

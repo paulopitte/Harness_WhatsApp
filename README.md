@@ -126,6 +126,10 @@ Todas as integrações externas são contratos estritos baseados em `typing.Prot
 * **Guardrails Ativos**: Proteção na borda (sanitização de PII e caracteres inválidos) e nós de *Input/Output Guardrails* no LangGraph, bloqueando ataques de *Prompt Injection* e desvios de escopo antes de gastar tokens na LLM principal.
 * **Middlewares Extensíveis (Estilo MediatR Pipeline)**: Interceptação assíncrona de ciclo de vida no LangGraph para auditoria de latência, controle de teto de custos/tokens por usuário e logs estruturados de auditoria.
 
+### 8. Prompt Management & Versionamento Dinâmico (PromptOps)
+* **Controle de Versões em Produção**: Gerenciamento de prompts desacoplado via Langfuse Prompt Management com tags/labels (`production`, `staging`, `canary`) e histórico imutável.
+* **Zero-Downtime Rollback & Fallback Local**: Capacidade de atualizar ou reverter a versão do prompt do agente em tempo real sem redeploy de código nem reinício de containers, com cache em memória (TTL) e fallback automático para arquivos locais versionados em `configs/prompts/*.yaml`.
+
 ---
 
 ## 🛠️ Stack Tecnológica
@@ -139,7 +143,8 @@ Todas as integrações externas são contratos estritos baseados em `typing.Prot
 | **Fila & Banco de Dados** | PostgreSQL 16+ com `pgvector` | Fila transacional concorrente (`SKIP LOCKED`), armazenamento de threads e busca vetorial unificados. |
 | **Driver de Banco** | `psycopg` v3 (async + pool) | Conexões assíncronas nativas de alta performance em Python. |
 | **Cognição & Agente** | LangChain v1 / LangGraph | Orquestração de grafos de estados cíclicos, ferramentas e sumarização. |
-| **Observabilidade** | Langfuse + OpenTelemetry | Rastreamento ponta a ponta de latência, nós de agentes, tokens e custos por execução. |
+| **PromptOps & Tracing** | Langfuse | Rastreamento ponta a ponta de latência, tokens, custos e versionamento dinâmico de prompts. |
+| **Observabilidade de Sistema** | OpenTelemetry | Telemetria e logs estruturados padronizados para ferramentas como Datadog/Grafana. |
 | **Testes & Qualidade** | Pytest, Pytest-Asyncio, Ruff | TDD, testes assíncronos e linting/formatação estritos no padrão Clean Code. |
 
 ---
@@ -154,7 +159,9 @@ whatsapp_harness/
 │       ├── spec.md                  # Especificação oficial da feature (User Stories P1 a P4)
 │       └── checklists/              # Checklist de qualidade dos requisitos
 ├── configs/
-│   └── harness.yaml                 # Configurações operacionais (debounce ms, retries, flags de mídia)
+│   ├── harness.yaml                 # Configurações operacionais (debounce ms, retries, flags de mídia)
+│   └── prompts/                     # Prompts locais para desenvolvimento offline e fallback (PromptPort)
+│       └── default_agent.yaml
 ├── docker-compose.yml               # PostgreSQL 16 com extensão pgvector
 ├── pyproject.toml                   # Dependências e metadados gerenciados pelo uv
 ├── .env.example                     # Modelo de variáveis de ambiente
