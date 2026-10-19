@@ -236,7 +236,7 @@ _FACT_EXTRACTORS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "nome_cliente",
         re.compile(
-            r"\b(?:meu\s+nome\s+[eé]|me\s+chamo|sou\s+o|sou\s+a)\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)?)",
+            r"\b(?i:meu\s+nome\s+[eé]|me\s+chamo|sou\s+o|sou\s+a)\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)?)",
         ),
     ),
     (

@@ -1,4 +1,4 @@
-"""Composition Root (`app.py` — T026 / T030-T041): Injeção de Dependências conectando Ports e Adapters.
+"""Composition Root (`app.py` — T026 / T030-T048): Injeção de Dependências conectando Ports e Adapters.
 
 Equivalente no C#/.NET: `Program.cs` (`builder.Services.AddSingleton<IQueue, PostgresQueueAdapter>()`).
 Centraliza a montagem de todos os componentes sem espalhar acoplamento concreto pelo sistema (SOLID DIP).
@@ -10,22 +10,21 @@ from harness.cognition.echo_engine import EchoCognitionEngine
 from harness.cognition.factory import ModelFactory
 from harness.cognition.graph import LangGraphCognitionEngine
 from harness.cognition.middlewares import (
-    AgentRunRepositoryProtocol,
     AuditRunMiddleware,
     ConversationMemoryMiddleware,
-    InMemoryAgentRunRepository,
     InMemoryTokenBudgetStore,
     LatencyTrackingMiddleware,
     MiddlewarePipeline,
-    PostgresAgentRunRepository,
     PostgresTokenBudgetStore,
     TokenBudgetMiddleware,
     TokenBudgetStoreProtocol,
 )
+from harness.cognition.prompts.manager import PromptManager
 from harness.cognition.retrievers.factory import VectorStoreFactory
 from harness.domain.ports import (
     CognitionEngineProtocol,
     OutboundProviderProtocol,
+    PromptProviderPort,
     QueueConsumerProtocol,
     QueueEnqueuerProtocol,
     RetrieverPort,
@@ -41,9 +40,15 @@ from harness.edge.rate_limit import (
 from harness.edge.resilience import InMemoryQuarantineRepository, QuarantineRepositoryProtocol
 from harness.ingress.database import DatabasePoolManager
 from harness.ingress.postgres_queue import InMemoryQueueAdapter, PostgresQueueAdapter
+from harness.ops.telemetry import configure_observability
 from harness.outbound.providers.console import ConsoleOutboundProvider
 from harness.outbound.providers.meta import MetaOutboundProvider
 from harness.outbound.sender import OutboundSender
+from harness.persistence.runs_repo import (
+    InMemoryRunsRepository,
+    PostgresRunsRepository,
+    RunsQueryRepositoryProtocol,
+)
 from harness.persistence.threads_repo import (
     InMemoryThreadsRepository,
     PostgresThreadsRepository,
@@ -67,8 +72,9 @@ class HarnessContainer:
     media_router: EdgeMediaRouter
     threads_repo: ThreadsRepositoryProtocol
     retriever: RetrieverPort
+    prompt_provider: PromptProviderPort
     token_budget_store: TokenBudgetStoreProtocol
-    agent_run_repo: AgentRunRepositoryProtocol
+    agent_run_repo: RunsQueryRepositoryProtocol
     cognition_engine: CognitionEngineProtocol
     outbound_provider: OutboundProviderProtocol
     outbound_sender: OutboundSender
@@ -83,6 +89,7 @@ async def build_container(
 ) -> HarnessContainer:
     """Monta e conecta todas as portas e adaptadores de acordo com `HarnessSettings`."""
     cfg = settings or get_settings()
+    configure_observability(cfg)
 
     db_manager: DatabasePoolManager | None = None
     pool = None
@@ -100,19 +107,20 @@ async def build_container(
         )
         threads_repo: ThreadsRepositoryProtocol = PostgresThreadsRepository(pool)
         token_budget_store: TokenBudgetStoreProtocol = PostgresTokenBudgetStore(pool)
-        agent_run_repo: AgentRunRepositoryProtocol = PostgresAgentRunRepository(pool)
+        agent_run_repo: RunsQueryRepositoryProtocol = PostgresRunsRepository(pool)
     else:
         mem_adapter = InMemoryQueueAdapter(max_retries=cfg.queue.max_retries)
         queue_enqueuer = mem_adapter
         queue_consumer = mem_adapter
-        quarantine_repo = InMemoryQuarantineRepository()
+        mem_quarantine = InMemoryQuarantineRepository()
+        quarantine_repo = mem_quarantine
         rate_limiter = InMemoryRateLimiter(
             window_seconds=cfg.edge.rate_limit_window_seconds,
             max_messages=cfg.edge.rate_limit_max_messages,
         )
         threads_repo = InMemoryThreadsRepository()
         token_budget_store = InMemoryTokenBudgetStore()
-        agent_run_repo = InMemoryAgentRunRepository()
+        agent_run_repo = InMemoryRunsRepository(quarantine_repo=mem_quarantine)
 
     # Roteador de Mídia na Borda (`text` | `audio` | `image` | `unsupported`)
     media_router = EdgeMediaRouter(
@@ -129,6 +137,9 @@ async def build_container(
         update={"provider": "in_memory" if force_in_memory else cfg.rag.provider}
     )
     retriever = VectorStoreFactory.create(rag_cfg, settings=cfg, pool=pool)
+
+    # Gerenciador de Prompts Versionados (PromptOps Langfuse + YAML local)
+    prompt_provider: PromptProviderPort = PromptManager(cfg.prompts, settings=cfg)
 
     # Provedor Outbound (`console` | `meta`)
     if cfg.outbound.provider == "meta":
@@ -165,6 +176,7 @@ async def build_container(
             middleware_pipeline=mw_pipeline,
             guardrails_config=cfg.guardrails,
             retriever=retriever if cfg.rag.enabled else None,
+            prompt_provider=prompt_provider,
             agent_name=cfg.prompts.default_prompt_name,
             rag_top_k=cfg.rag.top_k,
         )
@@ -175,6 +187,7 @@ async def build_container(
         queue_consumer=queue_consumer,
         cognition_engine=cognition_engine,
         outbound_sender=outbound_sender,
+        threads_repo=threads_repo,
         retry_base_backoff_seconds=cfg.queue.retry_base_backoff_seconds,
     )
 
@@ -194,6 +207,7 @@ async def build_container(
         media_router=media_router,
         threads_repo=threads_repo,
         retriever=retriever,
+        prompt_provider=prompt_provider,
         token_budget_store=token_budget_store,
         agent_run_repo=agent_run_repo,
         cognition_engine=cognition_engine,

@@ -135,16 +135,16 @@ description: "Lista de tarefas executáveis e ordenadas por dependência para o 
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T042 [P] [US4] Criar testes unitários do `PromptManager` (cache TTL, busca por label/versão no Langfuse e fallback automático para `configs/prompts/default_agent.yaml`) em `tests/unit/test_prompt_fallback.py`
-- [ ] T043 [P] [US4] Criar testes de integração para Handoff Humano (`bot` vs `human`) e endpoints da `admin_api` (stats e reprocessamento de DLQ) em `tests/integration/test_webhook_and_admin_api.py`
+- [X] T042 [P] [US4] Criar testes unitários do `PromptManager` (cache TTL, busca por label/versão no Langfuse e fallback automático para `configs/prompts/default_agent.yaml`) em `tests/unit/test_prompt_fallback.py`
+- [X] T043 [P] [US4] Criar testes de integração para Handoff Humano (`bot` vs `human`) e endpoints da `admin_api` (stats e reprocessamento de DLQ) em `tests/integration/test_webhook_and_admin_api.py`
 
 ### Implementation for User Story 4
 
-- [ ] T044 [P] [US4] Implementar `PromptManager` cumprindo `PromptProviderPort` (integração com Langfuse Prompt Management, cache em memória TTL e fallback para YAML local) em `src/harness/cognition/prompts/manager.py`
-- [ ] T045 [P] [US4] Implementar configuração de logs estruturados (`structlog` com `correlation_id`/`thread_id`), métricas OpenTelemetry e `CallbackHandler` do Langfuse em `src/harness/ops/telemetry.py`
-- [ ] T046 [P] [US4] Implementar `RunsRepository` para gravação e consulta de `agent_runs` e `quarantine_inbound` em `src/harness/persistence/runs_repo.py`
-- [ ] T047 [US4] Atualizar `ProcessQueueItemPipeline` em `src/harness/workers/pipeline.py` para verificar `thread.mode`: quando `'human'` ou `'paused'`, apenas registrar a mensagem no histórico e concluir sem invocar a LLM (FR-015)
-- [ ] T048 [US4] Implementar autenticação por API Key em `src/harness/ops/security.py`, endpoints administrativos (`GET /admin/queue/stats`, `POST /admin/queue/reprocess-dead`, `PATCH /admin/threads/{thread_id}/mode`, `GET /admin/threads/{thread_id}/facts`) em `src/harness/ops/admin_api.py` e entrypoint `scripts/run_admin.py`
+- [X] T044 [P] [US4] Implementar `PromptManager` cumprindo `PromptProviderPort` (integração com Langfuse Prompt Management, cache em memória TTL e fallback para YAML local) em `src/harness/cognition/prompts/manager.py`
+- [X] T045 [P] [US4] Implementar configuração de logs estruturados (`structlog` com `correlation_id`/`thread_id`), métricas OpenTelemetry e `CallbackHandler` do Langfuse em `src/harness/ops/telemetry.py`
+- [X] T046 [P] [US4] Implementar `RunsRepository` para gravação e consulta de `agent_runs` e `quarantine_inbound` em `src/harness/persistence/runs_repo.py`
+- [X] T047 [US4] Atualizar `ProcessQueueItemPipeline` em `src/harness/workers/pipeline.py` para verificar `thread.mode`: quando `'human'` ou `'paused'`, apenas registrar a mensagem no histórico e concluir sem invocar a LLM (FR-015)
+- [X] T048 [US4] Implementar autenticação por API Key em `src/harness/ops/security.py`, endpoints administrativos (`GET /admin/queue/stats`, `POST /admin/queue/reprocess-dead`, `PATCH /admin/threads/{thread_id}/mode`, `GET /admin/threads/{thread_id}/facts`) em `src/harness/ops/admin_api.py` e entrypoint `scripts/run_admin.py`
 
 **Checkpoint**: Todas as 4 User Stories concluídas e integradas com governança corporativa completa.
 
@@ -154,8 +154,8 @@ description: "Lista de tarefas executáveis e ordenadas por dependência para o 
 
 **Purpose**: Teste de carga e concorrência de workers, validação estática completa (`ruff` + `mypy`) e execução do guia `quickstart.md`.
 
-- [ ] T049 [P] Implementar teste de carga e concorrência (disparo de 50 mensagens concorrentes em múltiplas threads consumidas por 4 workers em paralelo) em `tests/load/test_burst_concurrency.py`
-- [ ] T050 Executar verificação estrita de tipos (`uv run mypy src/`), linter/formatter Clean Code (`uv run ruff check src/ tests/`) e validar todos os cenários do `specs/001-whatsapp-harness-mvp/quickstart.md`
+- [X] T049 [P] Implementar teste de carga e concorrência (disparo de 50 mensagens concorrentes em múltiplas threads consumidas por 4 workers em paralelo) em `tests/load/test_burst_concurrency.py`
+- [X] T050 Executar verificação estrita de tipos (`uv run mypy src/`), linter/formatter Clean Code (`uv run ruff check src/ tests/`) e validar todos os cenários do `specs/001-whatsapp-harness-mvp/quickstart.md`
 
 ---
 
