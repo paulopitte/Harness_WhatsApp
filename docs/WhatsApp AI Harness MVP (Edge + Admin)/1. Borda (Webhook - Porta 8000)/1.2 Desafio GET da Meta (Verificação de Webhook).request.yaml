@@ -1,0 +1,8 @@
+$kind: http-request
+url: http://localhost:8000/webhook?hub.mode=subscribe&hub.verify_token=dev_verify_token_123&hub.challenge=CHALLENGE_OK_999
+method: GET
+queryParams:
+  hub.mode: subscribe
+  hub.verify_token: dev_verify_token_123
+  hub.challenge: CHALLENGE_OK_999
+order: 2000

@@ -11,9 +11,9 @@ Processo 3 (`admin`): Isolado da Borda e dos Workers para permitir:
 from typing import Any
 
 from fastapi import APIRouter, Depends, FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from harness.domain.ports import QueueConsumerProtocol
+from harness.domain.ports import CognitionEngineProtocol, QueueConsumerProtocol
 from harness.domain.value_objects import ThreadId, ThreadMode
 from harness.ops.security import build_admin_api_key_dependency
 from harness.persistence.runs_repo import RunsQueryRepositoryProtocol
@@ -27,17 +27,25 @@ class UpdateThreadModeRequest(BaseModel):
     mode: ThreadMode
 
 
+class SimulatorChatRequest(BaseModel):
+    """Payload para simulação síncrona de chat Request/Response via Postman/Swagger."""
+
+    phone_number: str = Field(default="5511999998888", min_length=3)
+    text: str = Field(min_length=1)
+
+
 def create_admin_app(
     settings: HarnessSettings,
     queue_consumer: QueueConsumerProtocol,
     threads_repo: ThreadsRepositoryProtocol,
     runs_repo: RunsQueryRepositoryProtocol | None = None,
+    cognition_engine: CognitionEngineProtocol | None = None,
 ) -> FastAPI:
     """Fábrica da aplicação FastAPI de Operação e Governança (`ops/admin_api.py`)."""
     app = FastAPI(
         title="WhatsApp Harness — Admin & Operations API",
         version="0.1.0",
-        description="Painel HTTP de governança operacional, DLQ, Handoff Humano e telemetria.",
+        description="Painel HTTP de governança operacional, DLQ, Handoff Humano, Simulador Síncrono e telemetria.",
     )
     require_api_key = build_admin_api_key_dependency(settings.admin_api_key)
     admin_router = APIRouter(prefix="/admin", dependencies=[Depends(require_api_key)])
@@ -50,11 +58,51 @@ def create_admin_app(
             "docs_url": "/docs",
             "health_url": "/health",
             "stats_url": "/admin/queue/stats",
+            "simulator_url": "/admin/simulator/chat",
         }
 
     @app.get("/health")
     async def healthcheck() -> dict[str, str]:
         return {"status": "ok", "component": "ops-admin"}
+
+    @admin_router.post("/simulator/chat")
+    async def simulate_synchronous_chat(body: SimulatorChatRequest) -> dict[str, Any]:
+        """Simulador Síncrono (Request/Response Direto para Postman/Testes).
+
+        Executa o motor de cognição completo (LangGraph + Guardrails + Dupla Memória + RAG + Langfuse)
+        e devolve a resposta da IA diretamente no corpo do HTTP Response, sem precisar esperar o Worker!
+        """
+        thread_id = ThreadId(body.phone_number)
+        thread = await threads_repo.get_or_create_thread(str(thread_id))
+        if not thread.is_bot_active:
+            await threads_repo.append_message(str(thread_id), "user", body.text)
+            return {
+                "thread_id": str(thread_id),
+                "phone_number": body.phone_number,
+                "mode": str(thread.mode),
+                "user_text": body.text,
+                "bot_reply": None,
+                "note": f"Thread em modo '{thread.mode}' (Handoff Humano ativo). Mensagem salva no histórico sem acionar o bot.",
+            }
+
+        if cognition_engine is None:
+            reply_text = f"[Simulador Admin] Recebi: {body.text}"
+        else:
+            reply_text = await cognition_engine.generate_reply(thread_id, body.text)
+
+        updated_thread = await threads_repo.get_or_create_thread(str(thread_id))
+        facts = await threads_repo.get_semantic_facts(str(thread_id))
+        return {
+            "thread_id": str(thread_id),
+            "phone_number": body.phone_number,
+            "mode": str(updated_thread.mode),
+            "provider": settings.cognition.llm.provider,
+            "model": settings.cognition.llm.model,
+            "user_text": body.text,
+            "bot_reply": reply_text,
+            "conversation_summary": updated_thread.conversation_summary,
+            "semantic_facts": facts,
+        }
 
     @admin_router.get("/queue/stats")
     @admin_router.get("/stats")
@@ -122,4 +170,5 @@ def create_admin_app(
 
     app.include_router(admin_router)
     return app
+
 

@@ -9,10 +9,10 @@ A função `run_with_selector_loop` configura automaticamente a `loop_factory` c
 """
 
 import asyncio
-from collections.abc import Coroutine
-from pathlib import Path
 import selectors
 import sys
+from collections.abc import Coroutine
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlunparse
 

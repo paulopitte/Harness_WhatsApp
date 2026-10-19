@@ -1,0 +1,7 @@
+$kind: http-request
+name: 2.1 Estatísticas da Fila (pending, processing, done, dead, quarantine)
+url: http://localhost:8001/admin/queue/stats
+method: GET
+headers:
+  X-Admin-Api-Key: dev_admin_api_key_change_in_prod
+order: 1000

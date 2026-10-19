@@ -4,7 +4,6 @@ Uso:
     uv run python scripts/seed_knowledge.py
 """
 
-import asyncio
 
 from harness.cognition.retrievers.factory import (
     DEFAULT_COMPANY_KNOWLEDGE,

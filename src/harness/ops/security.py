@@ -6,8 +6,8 @@ que valida o header `X-Admin-Api-Key` em tempo constante (`hmac.compare_digest`)
 Integra `APIKeyHeader` para habilitar o botão **Authorize** diretamente no Swagger UI (`/docs`).
 """
 
-from collections.abc import Callable
 import hmac
+from collections.abc import Callable
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader

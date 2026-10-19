@@ -242,54 +242,213 @@ Este projeto foi construído utilizando a metodologia **Spec-Driven Development 
 
 ---
 
-## ⚡ Como Rodar o Projeto Localmente
+## ⚡ Guia Passo a Passo: Como Subir e Testar o Projeto Localmente
+
+> [!TIP]
+> **Para Novos Desenvolvedores:** Você **não precisa ter conta na Meta/WhatsApp Business** nem pagar por chaves de API para rodar e testar 100% da arquitetura! O projeto já vem configurado para usar **Ollama local** e **ConsoleMock** no outbound por padrão.
 
 ### Pré-requisitos
-* Python 3.13+ instalado
-* [uv](https://github.com/astral-sh/uv) instalado (`pip install uv` ou via instalador oficial)
-* Docker e Docker Compose instalados
+* **Python 3.13+** instalado
+* **[uv](https://github.com/astral-sh/uv)** instalado (`pip install uv` ou via instalador oficial)
+* **PostgreSQL 16+** (via Docker Compose `docker compose up -d` ou instalação nativa no Windows/Linux)
+* *(Opcional)* **[Ollama](https://ollama.com/)** instalado localmente para rodar o modelo `llama3.2` sem custo
 
-### 1. Clonar e Instalar Dependências
+---
+
+### Passo 1: Clonar, Instalar Dependências e Configurar o `.env`
+
 ```bash
-git clone https://github.com/seu-usuario/harness-whatsapp.git
+git clone https://github.com/paulopitte/harness-whatsapp.git
 cd harness-whatsapp
 
-# Sincroniza o ambiente virtual automaticamente com uv
+# Cria e sincroniza o ambiente virtual (.venv) automaticamente
 uv sync
-```
 
-### 2. Subir o Banco de Dados (PostgreSQL + pgvector)
-```bash
-docker compose up -d
-```
-
-### 3. Configurar Variáveis de Ambiente
-```bash
+# Cria seu arquivo de variáveis de ambiente
 cp .env.example .env
-# Configure suas chaves ou use as opções de Mock local
 ```
 
-### 4. Executar os Processos
+Verifique no seu arquivo `.env` as credenciais do seu PostgreSQL local (ex.: `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_PORT=5432`) e a chave administrativa (`ADMIN_API_KEY=dev-admin-secret-key`).
 
-Em terminais separados (ou orquestrado via scripts):
+---
+
+### Passo 2: Inicializar o Banco de Dados e Popular a Base RAG
+
+Execute os scripts abaixo na raiz do projeto.
+> **Nota para Windows:** O projeto configura automaticamente o `SelectorEventLoop` exigido pelo driver assíncrono `psycopg` v3 no Windows e cria o banco `whatsapp_harness` automaticamente caso ele ainda não exista!
 
 ```bash
-# Terminal 1: Iniciar a Borda HTTP (Webhook)
-uv run python -m harness.edge.webhook
+# 2.1 Cria o banco whatsapp_harness e aplica todas as tabelas (sql/001_init_harness.sql)
+uv run python scripts/init_db.py
 
-# Terminal 2: Iniciar o Worker Assíncrono
-uv run python -m harness.workers.runner
+# 2.2 Popula a base de conhecimento RAG com FAQs, Horários, Planos e Políticas da empresa
+uv run python scripts/seed_knowledge.py
 ```
 
-### 5. Simular Mensagens com o CLI (A Custo Zero)
-Dispare mensagens sintéticas para testar o debounce, a idempotência e o agente `Echo` impresso no console:
+---
+
+### Passo 3: Configurar o Modelo LLM Local (Ollama)
+
+O arquivo [`configs/harness.yaml`](configs/harness.yaml) já vem configurado para usar o **Ollama** no modo **LangGraph**:
+
+```yaml
+cognition:
+  agent_mode: "langgraph"   # "echo" | "langgraph"
+  llm:
+    provider: "ollama"      # "gemini" | "openai" | "ollama"
+    model: "llama3.2"
+    temperature: 0.2
+    max_tokens: 1024
+```
+
+Para garantir que o modelo esteja disponível na sua máquina:
+```bash
+# Baixa o modelo leve llama3.2 (~2GB) e inicia o servidor local do Ollama na porta 11434
+ollama pull llama3.2
+```
+*(Se quiser trocar para Gemini ou OpenAI no futuro, basta mudar `provider` em `configs/harness.yaml` e preencher `GOOGLE_API_KEY` ou `OPENAI_API_KEY` no `.env` — zero alteração de código!)*
+
+---
+
+### Passo 4: Configurar o Langfuse (Observabilidade e PromptOps — Opcional)
+
+O projeto funciona **100% offline** usando o fallback local [`configs/prompts/default_agent.yaml`](configs/prompts/default_agent.yaml). Porém, se você quiser visualizar o **Tracing em tempo real** de cada nó do LangGraph e editar prompts em produção sem redeploy (**PromptOps**):
+
+1. Crie uma conta gratuita em **[cloud.langfuse.com](https://cloud.langfuse.com)** (ou suba via Docker local), crie uma **Organization** e um **Project** (ex.: `whatsapp-harness`).
+2. Vá em **Settings $\rightarrow$ API Keys $\rightarrow$ Create new API keys** e copie as chaves para o seu `.env`:
+   ```env
+   LANGFUSE_PUBLIC_KEY=pk-lf-...
+   LANGFUSE_SECRET_KEY=sk-lf-...
+   LANGFUSE_HOST=https://cloud.langfuse.com
+   ```
+   *(Atenção: verifique se a região do seu projeto é `https://cloud.langfuse.com` [EU] ou `https://us.cloud.langfuse.com` [US]).*
+3. Ative a flag em [`configs/harness.yaml`](configs/harness.yaml):
+   ```yaml
+   observability:
+     langfuse_enabled: true
+   ```
+4. **(Opcional — PromptOps)**: No menu **Prompts** do Langfuse, clique em **New Prompt**:
+   * **Name**: `default_agent`
+   * **Type**: `Text`
+   * **Prompt**: Cole o texto do seu prompt de sistema (pode usar variáveis como `{{company_name}}` e `{{agent_role}}`)
+   * **Labels**: Marque a label `production` e salve. A Harness passará a buscar esse prompt dinamicamente com cache em memória (TTL de 60s) e fará fallback automático para o YAML local se a internet oscilar!
+
+---
+
+### Passo 5: Subir os 3 Processos Independentes
+
+Como esta é uma arquitetura corporativa desacoplada (**Regra #1 da Constitution**), abra **3 terminais separados** na pasta raiz do projeto:
+
+#### 🟢 Terminal 1 — Borda HTTP / Webhook (`Porta 8000`)
+Recebe os eventos do WhatsApp, valida assinatura HMAC, converte mídia em texto e enfileira no PostgreSQL em `< 150ms`:
+```bash
+uv run python scripts/run_webhook.py
+```
+* **Swagger UI da Borda**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+#### 🟡 Terminal 2 — Worker Assíncrono (Background Consumer)
+Faz polling na tabela `message_queue` com `SELECT ... FOR UPDATE SKIP LOCKED`, aguarda a janela de debounce (`3s`), executa o grafo LangGraph (Memória + RAG + Guardrails + LLM) e dispara a resposta no `ConsoleMock`:
+```bash
+uv run python scripts/run_worker.py
+```
+
+#### 🔵 Terminal 3 — Admin & Operations API (`Porta 8001`)
+Painel HTTP de governança operacional, DLQ, Handoff Humano, inspeção de memória e **Simulador Síncrono de Chat**:
+```bash
+uv run python scripts/run_admin.py
+```
+* **Swagger UI do Admin**: [http://localhost:8001/docs](http://localhost:8001/docs)
+
+---
+
+### Passo 6: Como Testar via Postman (Síncrono vs. Assíncrono) e CLI
+
+> [!IMPORTANT]
+> **Importe a Coleção Pronta no Postman!**  
+> O repositório inclui o arquivo **[`docs/WhatsApp_Harness.postman_collection.json`](docs/WhatsApp_Harness.postman_collection.json)**. Abra o Postman $\rightarrow$ clique em **Import** $\rightarrow$ selecione esse arquivo. Todas as requisições abaixo já estão prontas com headers e exemplos configurados!
+
+#### 🤔 Dúvida de Arquitetura: Por que o `POST /webhook` não devolve a resposta da IA na mesma chamada HTTP?
+No mundo real, a **Meta WhatsApp Cloud API** funciona exclusivamente via **Webhooks Assíncronos**:
+1. Quando você manda mensagem no WhatsApp, a Meta faz um `POST /webhook` para o seu servidor esperando apenas um `HTTP 200 OK` rápido (`< 150ms`) confirmando o recebimento (`{"status": "accepted"}`).
+2. Se o `POST /webhook` ficasse segurando a conexão esperando o Ollama/LLM pensar por 5 a 15 segundos, a Meta daria **Timeout** e reenviaria a mensagem várias vezes.
+3. Por isso, o Worker processa em background e abre uma **nova conexão de saída (`Outbound`)** para entregar a resposta ao usuário.
+
+Para facilitar seus testes e desenvolvimento de prompts no **Postman**, disponibilizamos **dois modos de teste**:
+
+---
+
+#### 💬 Opção A: Conversar no Estilo Request/Response Síncrono pelo Postman (`POST /admin/simulator/chat`)
+Se você quer enviar uma mensagem no Postman e **ver a resposta da IA imediatamente no mesmo Response JSON** (como um playground de chat), use o endpoint de simulação da **Admin API (`Porta 8001`)**:
+
+* **Método & URL**: `POST http://localhost:8001/admin/simulator/chat`
+* **Header**: `X-API-Key: dev-admin-secret-key`
+* **Body (JSON)**:
+  ```json
+  {
+    "phone_number": "5511999998888",
+    "text": "Olá! Meu nome é Paulo, trabalho na empresa ACME e prefiro reuniões pela manhã. Quais são os horários de atendimento e planos disponíveis?"
+  }
+  ```
+* **Response Imediato (`200 OK`)**:
+  ```json
+  {
+    "thread_id": "5511999998888",
+    "phone_number": "5511999998888",
+    "mode": "bot",
+    "provider": "ollama",
+    "model": "llama3.2",
+    "user_text": "Olá! Meu nome é Paulo...",
+    "bot_reply": "Olá, Paulo! Nosso atendimento funciona de segunda a sexta, das 08h às 18h...",
+    "conversation_summary": "...",
+    "semantic_facts": {
+      "customer_name": "Paulo",
+      "company": "ACME",
+      "meeting_preference": "manhã"
+    }
+  }
+  ```
+*(Ele executa exatamente o mesmo motor LangGraph, Guardrails, RAG e Memória Semântica no PostgreSQL, permitindo conversar turno a turno direto pelo Postman!)*
+
+---
+
+#### 📨 Opção B: Testar o Fluxo Assíncrono Completo do WhatsApp (`POST /webhook` + Fila + Worker)
+Para testar a resiliência real de produção (Ingestão na Borda $\rightarrow$ Debounce no Postgres $\rightarrow$ Worker Assíncrono):
+
+1. **Envie o payload oficial da Meta na Porta `8000`**:
+   * `POST http://localhost:8000/webhook` (Requisição `1.2` da coleção do Postman).
+   * Você receberá imediatamente `{"status": "accepted", "queued_count": 1}`.
+2. **Olhe o Terminal 2 (Worker)**:
+   * Após `3 segundos` (janela de debounce), o Worker imprimirá o card `[CONSOLE MOCK OUTBOUND]` com a resposta gerada pelo agente!
+3. **Ou consulte a resposta e a memória pelo próprio Postman na Porta `8001`**:
+   * `GET http://localhost:8001/admin/threads/5511999998888/facts` (Header `X-API-Key: dev-admin-secret-key`).
+   * No campo `active_messages`, você verá tanto a mensagem do `user` quanto a resposta do `assistant` gerada pelo Worker!
+
+---
+
+#### ⚡ Opção C: Simular Rajadas (Debounce) via CLI
+Para simular um usuário ansioso enviando 3 mensagens seguidas em menos de 1 segundo e comprovar que o PostgreSQL agrupa todas em uma única resposta da IA:
 
 ```bash
-# Disparar uma mensagem de teste
+# Disparar uma mensagem simples
 uv run python scripts/send_fake_msg.py --text "Olá, gostaria de saber os horários de atendimento"
 
-# Disparar uma rajada rápida (testando o debounce no PostgreSQL)
+# Disparar uma rajada rápida de 3 mensagens (testando o debounce no PostgreSQL)
 uv run python scripts/send_fake_msg.py --burst 3 --phone "5511999998888"
+```
+
+---
+
+### Passo 7: Rodar a Suíte de Testes e Qualidade de Código
+
+```bash
+# Executa todos os 36 testes automatizados (Unitários, Integração e Carga/Concorrência)
+uv run pytest -v
+
+# Validação de tipagem estrita (0 erros)
+uv run mypy src/
+
+# Linter e formatação Clean Code (0 alertas)
+uv run ruff check src/ tests/ scripts/
 ```
 
 ---

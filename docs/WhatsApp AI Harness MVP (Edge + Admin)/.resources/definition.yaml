@@ -1,0 +1,2 @@
+$kind: collection
+description: Coleção oficial Postman para testar a Borda (Webhook Meta API na porta 8000) e a Admin API (Operação/DLQ/Handoff na porta 8001) sem precisar de conta real na Meta.

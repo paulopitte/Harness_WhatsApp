@@ -1,0 +1,7 @@
+$kind: http-request
+name: 2.6 Reprocessar Itens Mortos da DLQ (dead -> pending)
+url: http://localhost:8001/admin/queue/reprocess-dead
+method: POST
+headers:
+  X-Admin-Api-Key: dev_admin_api_key_change_in_prod
+order: 6000

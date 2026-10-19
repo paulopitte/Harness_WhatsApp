@@ -1,0 +1,13 @@
+$kind: http-request
+url: http://localhost:8001/admin/threads/wa:5511999998888/mode
+method: PATCH
+headers:
+  X-Admin-Api-Key: dev_admin_api_key_change_in_prod
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "mode": "bot"
+    }
+order: 4000

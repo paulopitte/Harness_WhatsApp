@@ -1,0 +1,259 @@
+{
+  "info": {
+    "name": "WhatsApp AI Harness — MVP Collection",
+    "_postman_id": "d8f9e4c1-2a3b-4c5d-8e9f-0123456789ab",
+    "description": "Coleção oficial para testar a Borda HTTP (porta 8000), o Simulador de Chat Síncrono Request/Response (porta 8001) e a API Admin/Ops (porta 8001).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "webhook_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "admin_url",
+      "value": "http://localhost:8001"
+    },
+    {
+      "key": "admin_api_key",
+      "value": "dev-admin-secret-key"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Simulador de Chat Síncrono (Request/Response Direto no Postman)",
+      "item": [
+        {
+          "name": "0.1 Conversar com o Agente (POST /admin/simulator/chat)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"5511999998888\",\n  \"text\": \"Olá! Meu nome é Paulo, trabalho na empresa ACME e prefiro reuniões pela manhã. Quais são os horários de atendimento e planos disponíveis?\"\n}"
+            },
+            "url": {
+              "raw": "{{admin_url}}/admin/simulator/chat",
+              "host": ["{{admin_url}}"],
+              "path": ["admin", "simulator", "chat"]
+            },
+            "description": "Envia uma mensagem e recebe a resposta da IA (Ollama/Gemini/OpenAI + LangGraph + RAG + Memória Semântica) SÍNCRONAMENTE no mesmo Response do Postman!"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Borda HTTP (Webhook — Porta 8000)",
+      "item": [
+        {
+          "name": "1.1 Healthcheck da Borda",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{webhook_url}}/health",
+              "host": ["{{webhook_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Simular Mensagem de Texto do WhatsApp (POST /webhook Assíncrono)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"object\": \"whatsapp_business_account\",\n  \"entry\": [\n    {\n      \"id\": \"WHATSAPP_BUSINESS_ACCOUNT_ID\",\n      \"changes\": [\n        {\n          \"value\": {\n            \"messaging_product\": \"whatsapp\",\n            \"metadata\": {\n              \"display_phone_number\": \"15550001111\",\n              \"phone_number_id\": \"1234567890\"\n            },\n            \"contacts\": [\n              {\n                \"profile\": {\n                  \"name\": \"Paulo Teste Postman\"\n                },\n                \"wa_id\": \"5511999998888\"\n              }\n            ],\n            \"messages\": [\n              {\n                \"from\": \"5511999998888\",\n                \"id\": \"wamid.postman.{{$timestamp}}\",\n                \"timestamp\": \"{{$timestamp}}\",\n                \"type\": \"text\",\n                \"text\": {\n                  \"body\": \"Olá! Meu nome é Paulo, prefiro reuniões pela manhã. Quais são os horários de atendimento e a política de reembolso?\"\n                }\n              }\n            ]\n          },\n          \"field\": \"messages\"\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{webhook_url}}/webhook",
+              "host": ["{{webhook_url}}"],
+              "path": ["webhook"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Simular Mensagem de Áudio (Transcrição na Borda)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"object\": \"whatsapp_business_account\",\n  \"entry\": [\n    {\n      \"id\": \"WHATSAPP_BUSINESS_ACCOUNT_ID\",\n      \"changes\": [\n        {\n          \"value\": {\n            \"messaging_product\": \"whatsapp\",\n            \"messages\": [\n              {\n                \"from\": \"5511999998888\",\n                \"id\": \"wamid.audio.{{$timestamp}}\",\n                \"timestamp\": \"{{$timestamp}}\",\n                \"type\": \"audio\",\n                \"audio\": {\n                  \"id\": \"media_audio_001\",\n                  \"mime_type\": \"audio/ogg; codecs=opus\"\n                }\n              }\n            ]\n          },\n          \"field\": \"messages\"\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{webhook_url}}/webhook",
+              "host": ["{{webhook_url}}"],
+              "path": ["webhook"]
+            }
+          }
+        },
+        {
+          "name": "1.4 Simular Mídia Não Suportada (Vídeo -> Recusa Educada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"object\": \"whatsapp_business_account\",\n  \"entry\": [\n    {\n      \"id\": \"WHATSAPP_BUSINESS_ACCOUNT_ID\",\n      \"changes\": [\n        {\n          \"value\": {\n            \"messaging_product\": \"whatsapp\",\n            \"messages\": [\n              {\n                \"from\": \"5511999998888\",\n                \"id\": \"wamid.video.{{$timestamp}}\",\n                \"timestamp\": \"{{$timestamp}}\",\n                \"type\": \"video\",\n                \"video\": {\n                  \"id\": \"media_video_001\",\n                  \"mime_type\": \"video/mp4\"\n                }\n              }\n            ]\n          },\n          \"field\": \"messages\"\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{webhook_url}}/webhook",
+              "host": ["{{webhook_url}}"],
+              "path": ["webhook"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Admin & Operations API (Porta 8001)",
+      "item": [
+        {
+          "name": "2.1 Estatísticas da Fila (GET /admin/queue/stats)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{admin_url}}/admin/queue/stats",
+              "host": ["{{admin_url}}"],
+              "path": ["admin", "queue", "stats"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Consultar Memória, Fatos e Resposta do Bot (GET /admin/threads/{id}/facts)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{admin_url}}/admin/threads/5511999998888/facts",
+              "host": ["{{admin_url}}"],
+              "path": ["admin", "threads", "5511999998888", "facts"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Auditoria de Execuções da IA (GET /admin/runs)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{admin_url}}/admin/runs",
+              "host": ["{{admin_url}}"],
+              "path": ["admin", "runs"]
+            }
+          }
+        },
+        {
+          "name": "2.4 Ativar Handoff Humano — Pausar Bot (PATCH /admin/threads/{id}/mode)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"human\"\n}"
+            },
+            "url": {
+              "raw": "{{admin_url}}/admin/threads/5511999998888/mode",
+              "host": ["{{admin_url}}"],
+              "path": ["admin", "threads", "5511999998888", "mode"]
+            }
+          }
+        },
+        {
+          "name": "2.5 Reativar o Bot na Conversa (PATCH /admin/threads/{id}/mode)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"bot\"\n}"
+            },
+            "url": {
+              "raw": "{{admin_url}}/admin/threads/5511999998888/mode",
+              "host": ["{{admin_url}}"],
+              "path": ["admin", "threads", "5511999998888", "mode"]
+            }
+          }
+        },
+        {
+          "name": "2.6 Reprocessar Mensagens Mortas da DLQ (POST /admin/queue/reprocess-dead)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{admin_url}}/admin/queue/reprocess-dead",
+              "host": ["{{admin_url}}"],
+              "path": ["admin", "queue", "reprocess-dead"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+

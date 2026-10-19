@@ -1,0 +1,45 @@
+$kind: http-request
+name: 1.6 Enviar Vídeo Não Suportado (Testar Recusa na Borda sem gastar LLM)
+url: http://localhost:8000/webhook
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WABA_SIMULATOR_001",
+          "changes": [
+            {
+              "field": "messages",
+              "value": {
+                "messaging_product": "whatsapp",
+                "contacts": [
+                  {
+                    "wa_id": "5511999998888",
+                    "profile": {
+                      "name": "Paulo Pitte"
+                    }
+                  }
+                ],
+                "messages": [
+                  {
+                    "id": "wamid.video.{{$timestamp}}",
+                    "from": "5511999998888",
+                    "timestamp": "{{$timestamp}}",
+                    "type": "video",
+                    "video": {
+                      "id": "media_vid_99"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+order: 6000

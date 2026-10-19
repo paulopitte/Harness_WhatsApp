@@ -30,12 +30,12 @@ queue:
   worker_concurrency: 4                    # Número de corrotinas concorrentes por processo worker
 
 cognition:
-  agent_mode: "echo"                       # Opções: "echo" (custo zero) | "langgraph" (IA real)
+  agent_mode: "langgraph"                  # Opções: "echo" (custo zero) | "langgraph" (IA real + RAG + Memória)
   context_max_messages_before_summary: 12  # Aciona SummarizationMiddleware acima deste limite
   daily_token_budget_per_thread: 50000     # TokenBudgetMiddleware por telefone/dia
   llm:
-    provider: "gemini"                     # Opções na ModelFactory: "gemini" | "openai" | "ollama"
-    model: "gemini-2.5-flash"              # Ex.: "gemini-2.5-flash", "gpt-4o-mini", "llama3.2"
+    provider: "ollama"                     # Opções na ModelFactory: "gemini" | "openai" | "ollama"
+    model: "llama3.2"                      # Ex.: "llama3.2", "qwen2.5", "gemini-2.5-flash", "gpt-4o-mini"
     temperature: 0.2
     max_tokens: 1024
 

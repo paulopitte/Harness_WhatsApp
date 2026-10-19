@@ -1,0 +1,14 @@
+$kind: http-request
+name: 2.3 Ativar Handoff Humano (Pausar Robô -> mode = human)
+url: http://localhost:8001/admin/threads/wa:5511999998888/mode
+method: PATCH
+headers:
+  X-Admin-Api-Key: dev_admin_api_key_change_in_prod
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "mode": "human"
+    }
+order: 3000

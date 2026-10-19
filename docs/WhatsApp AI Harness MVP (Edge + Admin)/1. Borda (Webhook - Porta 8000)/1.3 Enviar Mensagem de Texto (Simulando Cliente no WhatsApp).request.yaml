@@ -1,0 +1,44 @@
+$kind: http-request
+url: http://localhost:8000/webhook
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WABA_SIMULATOR_001",
+          "changes": [
+            {
+              "field": "messages",
+              "value": {
+                "messaging_product": "whatsapp",
+                "contacts": [
+                  {
+                    "wa_id": "5511999998888",
+                    "profile": {
+                      "name": "Paulo Pitte"
+                    }
+                  }
+                ],
+                "messages": [
+                  {
+                    "id": "wamid.postman.{{$timestamp}}",
+                    "from": "5511999998888",
+                    "timestamp": "{{$timestamp}}",
+                    "type": "text",
+                    "text": {
+                      "body": "Olá! Meu nome é Paulo Pitte e trabalho na TechCorp. Quais são os planos corporativos e preços?"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+order: 3000

@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: 2a79dc7c-4339-4207-a6cd-4c882c639d6d
+
+localResources:
+  collections:
+    - ../WhatsApp_Harness.postman_collection.json

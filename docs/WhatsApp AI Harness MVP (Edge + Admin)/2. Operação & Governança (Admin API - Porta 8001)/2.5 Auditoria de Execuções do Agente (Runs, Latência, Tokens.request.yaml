@@ -1,0 +1,7 @@
+$kind: http-request
+name: 2.5 Auditoria de Execuções do Agente (Runs, Latência, Tokens e Guardrails)
+url: http://localhost:8001/admin/runs
+method: GET
+headers:
+  X-Admin-Api-Key: dev_admin_api_key_change_in_prod
+order: 5000

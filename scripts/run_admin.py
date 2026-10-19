@@ -17,6 +17,7 @@ async def _serve() -> None:
             queue_consumer=container.queue_consumer,
             threads_repo=container.threads_repo,
             runs_repo=container.agent_run_repo,
+            cognition_engine=container.cognition_engine,
         )
         config = uvicorn.Config(
             app=app,

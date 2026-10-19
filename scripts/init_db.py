@@ -1,7 +1,7 @@
 """Script utilitário para aplicar o schema inicial do banco PostgreSQL 16 + pgvector."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from harness.ingress.database import DatabasePoolManager, run_with_selector_loop
 from harness.settings import get_settings

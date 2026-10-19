@@ -51,10 +51,12 @@ class LangChainChatModelAdapter:
         *,
         provider_name: str,
         model_name: str,
+        settings: HarnessSettings | None = None,
     ) -> None:
         self._lc_model = lc_model
         self._provider_name = provider_name
         self._model_name = model_name
+        self._settings = settings
 
     @property
     def provider_name(self) -> str:
@@ -72,6 +74,8 @@ class LangChainChatModelAdapter:
     ) -> LlmCompletionResult:
         from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
+        from harness.ops.telemetry import get_langfuse_callback_handler
+
         messages: list[Any] = [SystemMessage(content=system_prompt)]
         if conversation_history:
             for msg in conversation_history:
@@ -85,7 +89,34 @@ class LangChainChatModelAdapter:
                     messages.append(HumanMessage(content=content))
         messages.append(HumanMessage(content=user_message))
 
-        response = await self._lc_model.ainvoke(messages)
+        invoke_config: dict[str, Any] = {}
+        if self._settings is not None:
+            lf_handler = get_langfuse_callback_handler(self._settings)
+            if lf_handler is not None:
+                invoke_config["callbacks"] = [lf_handler]
+
+        try:
+            response = (
+                await self._lc_model.ainvoke(messages, config=invoke_config)
+                if invoke_config
+                else await self._lc_model.ainvoke(messages)
+            )
+        except Exception as exc:
+            if self._provider_name == "ollama":
+                return LlmCompletionResult(
+                    content=(
+                        f"[Aviso Ollama Local ({self._model_name})]: Não foi possível conectar ao Ollama "
+                        f"ou o modelo '{self._model_name}' ainda não foi baixado ({type(exc).__name__}: {exc}). "
+                        f"Certifique-se de que o Ollama está rodando e execute: `ollama pull {self._model_name}`. "
+                        f"Mensagem recebida: '{user_message}'."
+                    ),
+                    prompt_tokens=max(1, len(system_prompt.split()) + len(user_message.split())),
+                    completion_tokens=25,
+                    model_name=self._model_name,
+                    provider_name=self._provider_name,
+                )
+            raise
+
         text_content = (
             response.content
             if isinstance(response.content, str)
@@ -94,8 +125,15 @@ class LangChainChatModelAdapter:
 
         # Extrai contagem de tokens de usage_metadata (padrão LangChain v1) ou estima por palavras
         usage = getattr(response, "usage_metadata", None) or {}
-        prompt_tokens = int(usage.get("input_tokens", max(1, len(system_prompt.split()) + len(user_message.split()))))
-        completion_tokens = int(usage.get("output_tokens", max(1, len(text_content.split()))))
+        prompt_tokens = int(
+            usage.get(
+                "input_tokens",
+                max(1, len(system_prompt.split()) + len(user_message.split())),
+            )
+        )
+        completion_tokens = int(
+            usage.get("output_tokens", max(1, len(text_content.split())))
+        )
 
         return LlmCompletionResult(
             content=text_content.strip(),
@@ -170,8 +208,10 @@ class ModelFactory:
                 f"Provedor LLM '{provider}' não suportado. Use um de: {cls.SUPPORTED_PROVIDERS}"
             )
 
-        google_key = settings.google_api_key if settings else ""
-        openai_key = settings.openai_api_key if settings else ""
+        raw_google_key = (settings.google_api_key if settings else "").strip()
+        raw_openai_key = (settings.openai_api_key if settings else "").strip()
+        google_key = "" if raw_google_key.startswith("your_") else raw_google_key
+        openai_key = "" if raw_openai_key.startswith("your_") else raw_openai_key
         ollama_url = settings.ollama_base_url if settings else "http://localhost:11434"
 
         if provider == "gemini":
@@ -192,6 +232,7 @@ class ModelFactory:
                 lc_gemini,
                 provider_name="gemini",
                 model_name=llm_config.model,
+                settings=settings,
             )
 
         if provider == "openai":
@@ -212,6 +253,7 @@ class ModelFactory:
                 lc_openai,
                 provider_name="openai",
                 model_name=llm_config.model,
+                settings=settings,
             )
 
         # provider == "ollama"
@@ -232,5 +274,6 @@ class ModelFactory:
             lc_ollama,
             provider_name="ollama",
             model_name=llm_config.model,
+            settings=settings,
         )
 

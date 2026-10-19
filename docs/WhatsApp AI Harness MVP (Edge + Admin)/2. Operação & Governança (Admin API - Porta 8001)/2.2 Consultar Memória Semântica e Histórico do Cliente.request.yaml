@@ -1,0 +1,6 @@
+$kind: http-request
+url: http://localhost:8001/admin/threads/wa:5511999998888/facts
+method: GET
+headers:
+  X-Admin-Api-Key: dev_admin_api_key_change_in_prod
+order: 2000

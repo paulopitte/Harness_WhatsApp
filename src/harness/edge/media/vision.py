@@ -21,7 +21,8 @@ class ImageVisionDescriber:
     """Descritor de imagem na borda (com fallback determinístico local quando offline/simulador)."""
 
     def __init__(self, *, api_key: str = "", model_name: str = "gemini-2.5-flash") -> None:
-        self._api_key = api_key
+        cleaned_key = api_key.strip()
+        self._api_key = "" if cleaned_key.startswith("your_") else cleaned_key
         self._model_name = model_name
 
     async def describe(self, attachment: InboundMediaAttachment) -> str:
