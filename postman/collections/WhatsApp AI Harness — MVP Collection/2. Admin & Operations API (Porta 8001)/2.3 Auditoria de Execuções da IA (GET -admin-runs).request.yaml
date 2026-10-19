@@ -1,0 +1,7 @@
+$kind: http-request
+name: 2.3 Auditoria de Execuções da IA (GET /admin/runs)
+url: "{{admin_url}}/admin/runs"
+method: GET
+headers:
+  X-API-Key: "{{admin_api_key}}"
+order: 3000

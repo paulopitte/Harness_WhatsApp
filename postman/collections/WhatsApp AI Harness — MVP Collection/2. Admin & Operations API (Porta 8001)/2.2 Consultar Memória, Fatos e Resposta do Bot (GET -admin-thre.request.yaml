@@ -1,0 +1,7 @@
+$kind: http-request
+name: 2.2 Consultar Memória, Fatos e Resposta do Bot (GET /admin/threads/{id}/facts)
+url: "{{admin_url}}/admin/threads/5511999998888/facts"
+method: GET
+headers:
+  X-API-Key: "{{admin_api_key}}"
+order: 2000

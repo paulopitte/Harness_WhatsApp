@@ -1,0 +1,10 @@
+workspace:
+  id: 0790d7b0-52b3-4848-94f1-fc706b7bf3c9
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../postman/collections/WhatsApp AI Harness — MVP Collection: c91f31a3-b9e1-4a55-9472-a10d331a0bf5
+  globals:
+    ../postman/globals/workspace.globals.yaml: f6ea5b1d-c0c3-4f48-8795-76a3daec87d3

@@ -1,0 +1,37 @@
+$kind: http-request
+url: "{{webhook_url}}/webhook"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "messages": [
+                  {
+                    "from": "5511999998888",
+                    "id": "wamid.audio.{{$timestamp}}",
+                    "timestamp": "{{$timestamp}}",
+                    "type": "audio",
+                    "audio": {
+                      "id": "media_audio_001",
+                      "mime_type": "audio/ogg; codecs=opus"
+                    }
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+order: 3000

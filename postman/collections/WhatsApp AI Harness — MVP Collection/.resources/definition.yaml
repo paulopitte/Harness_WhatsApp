@@ -1,0 +1,6 @@
+$kind: collection
+description: Coleção oficial para testar a Borda HTTP (porta 8000), o Simulador de Chat Síncrono Request/Response (porta 8001) e a API Admin/Ops (porta 8001).
+variables:
+  webhook_url: http://localhost:8000
+  admin_url: http://localhost:8001
+  admin_api_key: dev-admin-secret-key

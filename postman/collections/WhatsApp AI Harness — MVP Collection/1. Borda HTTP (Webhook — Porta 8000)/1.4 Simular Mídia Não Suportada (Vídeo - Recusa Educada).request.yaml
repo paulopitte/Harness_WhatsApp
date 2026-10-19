@@ -1,0 +1,38 @@
+$kind: http-request
+name: 1.4 Simular Mídia Não Suportada (Vídeo -> Recusa Educada)
+url: "{{webhook_url}}/webhook"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "messages": [
+                  {
+                    "from": "5511999998888",
+                    "id": "wamid.video.{{$timestamp}}",
+                    "timestamp": "{{$timestamp}}",
+                    "type": "video",
+                    "video": {
+                      "id": "media_video_001",
+                      "mime_type": "video/mp4"
+                    }
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+order: 4000

@@ -1,0 +1,7 @@
+$kind: http-request
+name: 2.1 Estatísticas da Fila (GET /admin/queue/stats)
+url: "{{admin_url}}/admin/queue/stats"
+method: GET
+headers:
+  X-API-Key: "{{admin_api_key}}"
+order: 1000

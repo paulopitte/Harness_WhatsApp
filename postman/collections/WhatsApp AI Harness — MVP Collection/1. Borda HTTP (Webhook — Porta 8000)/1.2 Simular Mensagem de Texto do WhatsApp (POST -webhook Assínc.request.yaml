@@ -1,0 +1,49 @@
+$kind: http-request
+name: 1.2 Simular Mensagem de Texto do WhatsApp (POST /webhook Assíncrono)
+url: "{{webhook_url}}/webhook"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "15550001111",
+                  "phone_number_id": "1234567890"
+                },
+                "contacts": [
+                  {
+                    "profile": {
+                      "name": "Paulo Teste Postman"
+                    },
+                    "wa_id": "5511999998888"
+                  }
+                ],
+                "messages": [
+                  {
+                    "from": "5511999998888",
+                    "id": "wamid.postman.{{$timestamp}}",
+                    "timestamp": "{{$timestamp}}",
+                    "type": "text",
+                    "text": {
+                      "body": "Olá! Meu nome é Paulo, prefiro reuniões pela manhã. Quais são os horários de atendimento e a política de reembolso?"
+                    }
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+order: 2000

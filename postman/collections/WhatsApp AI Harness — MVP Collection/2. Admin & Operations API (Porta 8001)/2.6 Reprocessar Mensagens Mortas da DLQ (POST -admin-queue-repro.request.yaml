@@ -1,0 +1,7 @@
+$kind: http-request
+name: 2.6 Reprocessar Mensagens Mortas da DLQ (POST /admin/queue/reprocess-dead)
+url: "{{admin_url}}/admin/queue/reprocess-dead"
+method: POST
+headers:
+  X-API-Key: "{{admin_api_key}}"
+order: 6000

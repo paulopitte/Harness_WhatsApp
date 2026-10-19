@@ -1,0 +1,16 @@
+$kind: http-request
+name: 0.1 Conversar com o Agente (POST /admin/simulator/chat)
+description: Envia uma mensagem e recebe a resposta da IA (Ollama/Gemini/OpenAI + LangGraph + RAG + Memória Semântica) SÍNCRONAMENTE no mesmo Response do Postman!
+url: "{{admin_url}}/admin/simulator/chat"
+method: POST
+headers:
+  Content-Type: application/json
+  X-API-Key: "{{admin_api_key}}"
+body:
+  type: text
+  content: |-
+    {
+      "phone_number": "5511999998888",
+      "text": "Olá! Meu nome é Paulo, trabalho na empresa ACME e prefiro reuniões pela manhã. Quais são os horários de atendimento e planos disponíveis?"
+    }
+order: 1000

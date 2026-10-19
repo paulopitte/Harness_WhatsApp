@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{webhook_url}}/health"
+method: GET
+order: 1000

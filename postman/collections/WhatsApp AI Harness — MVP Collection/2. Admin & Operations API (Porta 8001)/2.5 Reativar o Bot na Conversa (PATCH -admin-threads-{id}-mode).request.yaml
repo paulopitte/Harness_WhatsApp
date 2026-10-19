@@ -1,0 +1,14 @@
+$kind: http-request
+name: 2.5 Reativar o Bot na Conversa (PATCH /admin/threads/{id}/mode)
+url: "{{admin_url}}/admin/threads/5511999998888/mode"
+method: PATCH
+headers:
+  Content-Type: application/json
+  X-API-Key: "{{admin_api_key}}"
+body:
+  type: text
+  content: |-
+    {
+      "mode": "bot"
+    }
+order: 5000
