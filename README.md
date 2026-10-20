@@ -438,10 +438,21 @@ uv run python scripts/send_fake_msg.py --burst 3 --phone "5511999998888"
 
 ---
 
+#### 🌐 Opção D: Interface Web Interativa via Navegador (Chainlit — Porta 8002)
+Para conversar interativamente com o assistente em uma interface web moderna (estilo ChatGPT/WhatsApp Web) conectada diretamente ao motor cognitivo, RAG e memória:
+
+```bash
+uv run chainlit run scripts/run_chainlit.py --port 8002
+```
+
+Abra o seu navegador em [http://localhost:8002](http://localhost:8002).
+
+---
+
 ### Passo 7: Rodar a Suíte de Testes e Qualidade de Código
 
 ```bash
-# Executa todos os 46 testes automatizados (Unitários, Integração, Deep Research e Carga)
+# Executa todos os 48 testes automatizados (Unitários, Integração, Deep Research e Carga)
 uv run pytest -v
 
 # Validação de tipagem estrita (0 erros)
@@ -469,6 +480,18 @@ deep_research:
   enabled: false     # 👈 false = consulta apenas a base do cliente; true = pesquisa aberta com analista e fontes
   include_sources: true
 ```
+
+---
+
+### Passo 9: Subir a Interface Web Interativa (Chainlit UI)
+
+Para rodar uma interface visual completa de chat no navegador (estilo ChatGPT) para demonstrações com clientes e testes ao vivo:
+
+```bash
+uv run chainlit run scripts/run_chainlit.py --port 8002
+```
+* **Acesse no navegador:** [http://localhost:8002](http://localhost:8002)
+* Ele se conecta diretamente ao mesmo motor LangGraph, RAG no PostgreSQL e Dupla Memória Semântica da aplicação!
 
 ---
 

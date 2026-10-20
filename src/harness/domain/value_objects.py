@@ -76,7 +76,9 @@ class ThreadId:
         cleaned = (raw_value or "").strip()
         if not cleaned:
             raise PayloadNormalizationError("O identificador da thread (ThreadId) não pode ser vazio.")
-        if not cleaned.startswith("wa:"):
+        if cleaned.startswith("web:"):
+            pass
+        elif not cleaned.startswith("wa:"):
             phone = PhoneNumber(cleaned)
             cleaned = f"wa:{phone.value}"
         else:
@@ -91,8 +93,8 @@ class ThreadId:
 
     @property
     def phone_number(self) -> str:
-        """Retorna apenas os dígitos do telefone associado à thread."""
-        return self.value.removeprefix("wa:")
+        """Retorna apenas os dígitos do telefone ou identificador web associado à thread."""
+        return self.value.removeprefix("wa:").removeprefix("web:")
 
     def __str__(self) -> str:
         return self.value
