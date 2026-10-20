@@ -53,7 +53,7 @@ rag:
   top_k: 4
 
 prompts:
-  provider: "local_with_langfuse"          # Busca no Langfuse (se configurado) com fallback para YAML local
+  provider: "local_only" #local_only or  local_with_langfuse         # Busca no Langfuse (se configurado) com fallback para YAML local
   default_prompt_name: "AssistentePITTE"   # Nome do prompt padrão (configs/prompts/*.yaml)
   default_prompt_version: "local-1.0.0"     # Versão do prompt 
   default_label: "production"

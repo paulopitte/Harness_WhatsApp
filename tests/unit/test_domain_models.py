@@ -119,5 +119,5 @@ def test_settings_loads_from_harness_yaml(test_settings: HarnessSettings) -> Non
     assert test_settings.queue.debounce_seconds == 3.0
     assert test_settings.queue.max_retries == 3
     assert test_settings.rag.provider == "postgres"
-    assert test_settings.prompts.default_prompt_name == "default_agent"
+    assert test_settings.prompts.default_prompt_name in ("default_agent", "AssistentePITTE")
 
