@@ -94,6 +94,24 @@ class OutboundConfig(BaseModel):
     timeout_seconds: float = Field(default=10.0, ge=1.0)
 
 
+class WebsiteCrawlerConfig(BaseModel):
+    enabled: bool = True
+    provider: Literal["http_crawler", "sitemap", "api"] = "http_crawler"
+    target_url: str = "https://mawwal.com.br"
+    sync_cron: str = "0 3 * * *"
+    max_pages: int = Field(default=50, ge=1, le=500)
+    chunk_size: int = Field(default=800, ge=100)
+    chunk_overlap: int = Field(default=100, ge=0)
+
+
+class DeepResearchConfig(BaseModel):
+    enabled: bool = False
+    provider: Literal["duckduckgo", "tavily"] = "duckduckgo"
+    include_sources: bool = True
+    max_results: int = Field(default=3, ge=1, le=10)
+    timeout_seconds: float = Field(default=5.0, ge=1.0, le=30.0)
+
+
 class ObservabilityConfig(BaseModel):
     log_level: str = "INFO"
     json_logs: bool = False
@@ -171,6 +189,8 @@ class HarnessSettings(BaseSettings):
     rag: RagConfig = Field(default_factory=RagConfig)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
     outbound: OutboundConfig = Field(default_factory=OutboundConfig)
+    website_crawler: WebsiteCrawlerConfig = Field(default_factory=WebsiteCrawlerConfig)
+    deep_research: DeepResearchConfig = Field(default_factory=DeepResearchConfig)
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
 
     @classmethod

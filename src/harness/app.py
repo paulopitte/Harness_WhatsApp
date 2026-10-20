@@ -171,6 +171,18 @@ async def build_container(
                 ),
             ]
         )
+        deep_research_engine = None
+        if cfg.deep_research.enabled:
+            from harness.cognition.deep_research import DeepResearchEngine
+            from harness.cognition.retrievers.web_search import DuckDuckGoSearchAdapter
+
+            ddg_search = DuckDuckGoSearchAdapter(timeout_seconds=cfg.deep_research.timeout_seconds)
+            deep_research_engine = DeepResearchEngine(
+                model=model_adapter,
+                search_port=ddg_search,
+                config=cfg.deep_research,
+            )
+
         cognition_engine: CognitionEngineProtocol = LangGraphCognitionEngine(
             model_adapter=model_adapter,
             middleware_pipeline=mw_pipeline,
@@ -180,6 +192,7 @@ async def build_container(
             agent_name=cfg.prompts.default_prompt_name,
             rag_top_k=cfg.rag.top_k,
             settings=cfg,
+            deep_research_engine=deep_research_engine,
         )
     else:
         cognition_engine = EchoCognitionEngine()

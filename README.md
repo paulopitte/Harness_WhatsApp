@@ -441,7 +441,7 @@ uv run python scripts/send_fake_msg.py --burst 3 --phone "5511999998888"
 ### Passo 7: Rodar a Suíte de Testes e Qualidade de Código
 
 ```bash
-# Executa todos os 36 testes automatizados (Unitários, Integração e Carga/Concorrência)
+# Executa todos os 46 testes automatizados (Unitários, Integração, Deep Research e Carga)
 uv run pytest -v
 
 # Validação de tipagem estrita (0 erros)
@@ -449,6 +449,25 @@ uv run mypy src/
 
 # Linter e formatação Clean Code (0 alertas)
 uv run ruff check src/ tests/ scripts/
+```
+
+---
+
+### Passo 8: Rastrear Sites de Clientes (`crawl_website.py`) & Deep Research Opcional
+
+#### 🌐 8.1 Rastrear qualquer Site Corporativo para a Base do Bot
+Para extrair produtos, serviços ou páginas de qualquer cliente (ex.: Sites Institucionais, clínica, faculdade) e gravar no banco vetorial:
+```bash
+# Rastreia o site do cliente e gera embeddings no PostgreSQL (tabela knowledge_documents)
+uv run python scripts/crawl_website.py --url https://mawwal.com.br --max-pages 15
+```
+
+#### 🔎 8.2 Chavear a Pesquisa Profunda na Web (`deep_research`)
+Em [`configs/harness.yaml`](configs/harness.yaml), você decide se o robô deve ou não pesquisar na internet aberta via DuckDuckGo:
+```yaml
+deep_research:
+  enabled: false     # 👈 false = consulta apenas a base do cliente; true = pesquisa aberta com analista e fontes
+  include_sources: true
 ```
 
 ---

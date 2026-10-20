@@ -64,6 +64,22 @@ outbound:
   meta_api_version: "v21.0"
   timeout_seconds: 10.0
 
+website_crawler:
+  enabled: true                            # Ingestão de site corporativo do cliente (RAG)
+  provider: "http_crawler"                 # "http_crawler" | "sitemap" | "api"
+  target_url: "hhttps://mawwal.com.br/collections/ver-todos"      # URL do site corporativo do cliente
+  sync_cron: "0 3 * * *"                  # Agendamento diário de re-indexação
+  max_pages: 50                            # Teto de páginas rastreadas
+  chunk_size: 800
+  chunk_overlap: 100
+
+deep_research:
+  enabled: true                           # 👈 PESQUISA PROFUNDA NA WEB: false = desligada, true = ligada
+  provider: "duckduckgo"                   # "duckduckgo" | "tavily"
+  include_sources: true                    # Cita links/fontes consultadas no WhatsApp
+  max_results: 3                           # Quantidade de links consultados por turno
+  timeout_seconds: 5.0                     # Timeout rígido para não travar o WhatsApp
+
 observability:
   log_level: "INFO"
   json_logs: true                         # Em produção: true (formato JSON estruturado)

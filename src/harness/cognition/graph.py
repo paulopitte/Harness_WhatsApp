@@ -96,6 +96,7 @@ class LangGraphCognitionEngine:
         agent_name: str = "default_agent",
         rag_top_k: int = 4,
         settings: HarnessSettings | None = None,
+        deep_research_engine: Any | None = None,
     ) -> None:
         self._model = model_adapter
         self._pipeline = middleware_pipeline or MiddlewarePipeline()
@@ -105,6 +106,7 @@ class LangGraphCognitionEngine:
         self._agent_name = agent_name
         self._rag_top_k = rag_top_k
         self._settings = settings
+        self._deep_research_engine = deep_research_engine
         self.knowledge_tool: BaseTool | None = (
             create_search_company_knowledge_tool(retriever, top_k=rag_top_k)
             if retriever is not None
@@ -184,6 +186,15 @@ class LangGraphCognitionEngine:
                 system_prompt = (
                     f"{system_prompt}\n\n"
                     f"## Contexto Institucional Recuperado (RAG):\n- {joined_rag}"
+                )
+
+        # Deep Research na internet aberta (acionado estritamente se deep_research.enabled: true)
+        if self._deep_research_engine is not None and user_text.strip():
+            research_facts = await self._deep_research_engine.run_research(user_text)
+            if research_facts:
+                system_prompt = (
+                    f"{system_prompt}\n\n"
+                    f"## Pesquisa Externa em Tempo Real (Deep Research):\n{research_facts}"
                 )
 
         return {

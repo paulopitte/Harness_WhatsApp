@@ -6,7 +6,8 @@ verificado estaticamente pelo `mypy` e em tempo de execução com `isinstance()`
 o domínio a bibliotecas externas de infraestrutura.
 """
 
-from typing import Protocol, runtime_checkable
+from dataclasses import dataclass, field
+from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 
 from harness.domain.events import QueueStats
@@ -111,4 +112,45 @@ class CognitionEngineProtocol(Protocol):
 # Aliases para compatibilidade de nomenclatura Port / Protocol
 RetrieverProtocol = RetrieverPort
 PromptProviderProtocol = PromptProviderPort
+
+
+@dataclass(frozen=True, slots=True)
+class WebSearchResult:
+    """Resultado individual de busca na web."""
+
+    title: str
+    snippet: str
+    link: str
+    source_name: str = ""
+
+
+@runtime_checkable
+class WebSearchPort(Protocol):
+    """Porta agnóstica para pesquisa profunda na Web (DuckDuckGo, Tavily, Google Search)."""
+
+    @property
+    def provider_name(self) -> str: ...
+
+    async def search(self, query: str, max_results: int = 3) -> list[WebSearchResult]:
+        """Executa busca assíncrona na Web e retorna lista de resultados estruturados."""
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class CrawledPage:
+    """Página ou produto extraído de um site corporativo."""
+
+    url: str
+    title: str
+    content: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@runtime_checkable
+class WebsiteCrawlerPort(Protocol):
+    """Porta para extração e rastreamento de páginas/produtos de qualquer site corporativo."""
+
+    async def crawl_site(self, base_url: str, max_pages: int = 50) -> list[CrawledPage]:
+        """Rastreia assincronamente a URL base e retorna páginas extraídas com conteúdo limpo."""
+        ...
 
