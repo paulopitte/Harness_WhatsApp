@@ -16,7 +16,7 @@
     },
     {
       "key": "admin_api_key",
-      "value": "dev-admin-secret-key"
+      "value": "dev_admin_api_key_change_in_prod"
     }
   ],
   "item": [
@@ -33,7 +33,7 @@
                 "value": "application/json"
               },
               {
-                "key": "X-API-Key",
+                "key": "X-Admin-Api-Key",
                 "value": "{{admin_api_key}}"
               }
             ],
@@ -140,7 +140,7 @@
             "method": "GET",
             "header": [
               {
-                "key": "X-API-Key",
+                "key": "X-Admin-Api-Key",
                 "value": "{{admin_api_key}}"
               }
             ],
@@ -157,7 +157,7 @@
             "method": "GET",
             "header": [
               {
-                "key": "X-API-Key",
+                "key": "X-Admin-Api-Key",
                 "value": "{{admin_api_key}}"
               }
             ],
@@ -174,7 +174,7 @@
             "method": "GET",
             "header": [
               {
-                "key": "X-API-Key",
+                "key": "X-Admin-Api-Key",
                 "value": "{{admin_api_key}}"
               }
             ],
@@ -195,7 +195,7 @@
                 "value": "application/json"
               },
               {
-                "key": "X-API-Key",
+                "key": "X-Admin-Api-Key",
                 "value": "{{admin_api_key}}"
               }
             ],
@@ -220,7 +220,7 @@
                 "value": "application/json"
               },
               {
-                "key": "X-API-Key",
+                "key": "X-Admin-Api-Key",
                 "value": "{{admin_api_key}}"
               }
             ],
@@ -241,7 +241,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-API-Key",
+                "key": "X-Admin-Api-Key",
                 "value": "{{admin_api_key}}"
               }
             ],

@@ -179,6 +179,7 @@ async def build_container(
             prompt_provider=prompt_provider,
             agent_name=cfg.prompts.default_prompt_name,
             rag_top_k=cfg.rag.top_k,
+            settings=cfg,
         )
     else:
         cognition_engine = EchoCognitionEngine()

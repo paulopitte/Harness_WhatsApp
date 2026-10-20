@@ -37,6 +37,8 @@ class ChatModelAdapterProtocol(Protocol):
         system_prompt: str,
         user_message: str,
         conversation_history: list[dict[str, str]] | None = None,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> LlmCompletionResult:
         """Invoca o modelo LLM com prompt de sistema, histórico e mensagem atual."""
         ...
@@ -71,6 +73,8 @@ class LangChainChatModelAdapter:
         system_prompt: str,
         user_message: str,
         conversation_history: list[dict[str, str]] | None = None,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> LlmCompletionResult:
         from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
@@ -90,6 +94,8 @@ class LangChainChatModelAdapter:
         messages.append(HumanMessage(content=user_message))
 
         invoke_config: dict[str, Any] = {}
+        if metadata:
+            invoke_config["metadata"] = metadata
         if self._settings is not None:
             lf_handler = get_langfuse_callback_handler(self._settings)
             if lf_handler is not None:
@@ -164,6 +170,8 @@ class DeterministicStubChatModelAdapter:
         system_prompt: str,
         user_message: str,
         conversation_history: list[dict[str, str]] | None = None,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> LlmCompletionResult:
         history_len = len(conversation_history) if conversation_history else 0
         rag_marker = "## Contexto Institucional Recuperado (RAG):"

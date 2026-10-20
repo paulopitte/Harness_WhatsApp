@@ -4,6 +4,7 @@ Equivalente no C#/.NET: `Serilog` (com `LogContext.PushProperty("CorrelationId",
 `OpenTelemetry.Extensions.Hosting` (`ActivitySource` / `Meter`) e `Langfuse` Tracing Handler.
 """
 
+import contextlib
 from contextvars import ContextVar
 from typing import Any
 
@@ -57,6 +58,38 @@ def get_logger(component: str = "harness") -> Any:
     return structlog.get_logger(component=component)
 
 
+_langfuse_client_instance: Any = None
+
+
+def get_langfuse_client(settings: HarnessSettings) -> Any | None:
+    """Retorna uma instância autenticada do cliente Langfuse (ou None se desabilitado)."""
+    global _langfuse_client_instance
+    if not settings.observability.langfuse_enabled:
+        return None
+    if not (settings.langfuse_public_key and settings.langfuse_secret_key):
+        return None
+    if _langfuse_client_instance is not None:
+        return _langfuse_client_instance
+
+    import os
+
+    os.environ["LANGFUSE_PUBLIC_KEY"] = settings.langfuse_public_key
+    os.environ["LANGFUSE_SECRET_KEY"] = settings.langfuse_secret_key
+    os.environ["LANGFUSE_HOST"] = settings.langfuse_host
+
+    try:
+        from langfuse import Langfuse
+
+        _langfuse_client_instance = Langfuse(
+            public_key=settings.langfuse_public_key,
+            secret_key=settings.langfuse_secret_key,
+            host=settings.langfuse_host,
+        )
+        return _langfuse_client_instance
+    except Exception:
+        return None
+
+
 def get_langfuse_callback_handler(
     settings: HarnessSettings,
     *,
@@ -64,20 +97,24 @@ def get_langfuse_callback_handler(
     trace_name: str = "whatsapp_agent_turn",
 ) -> Any | None:
     """Cria um `CallbackHandler` do Langfuse se habilitado e com chaves presentes; caso contrário retorna `None`."""
-    if not settings.observability.langfuse_enabled:
-        return None
-    if not (settings.langfuse_public_key and settings.langfuse_secret_key):
+    client = get_langfuse_client(settings)
+    if client is None:
         return None
     try:
-        from langfuse.callback import CallbackHandler
+        try:
+            from langfuse.langchain import CallbackHandler
+        except ImportError:
+            from langfuse.callback import CallbackHandler  # type: ignore[no-redef]
 
-        return CallbackHandler(
-            public_key=settings.langfuse_public_key,
-            secret_key=settings.langfuse_secret_key,
-            host=settings.langfuse_host,
-            session_id=session_id,
-            trace_name=trace_name,
-        )
+        return CallbackHandler()
     except Exception:
         return None
+
+
+def flush_langfuse(settings: HarnessSettings | None = None) -> None:
+    """Força o envio imediato de todos os traces/spans pendentes no buffer para o Langfuse Cloud."""
+    global _langfuse_client_instance
+    if _langfuse_client_instance is not None:
+        with contextlib.suppress(Exception):
+            _langfuse_client_instance.flush()
 

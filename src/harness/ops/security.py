@@ -9,20 +9,22 @@ Integra `APIKeyHeader` para habilitar o botão **Authorize** diretamente no Swag
 import hmac
 from collections.abc import Callable
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import APIKeyHeader
 
 _api_key_header_scheme = APIKeyHeader(name="X-Admin-Api-Key", auto_error=False)
 
 
-def build_admin_api_key_dependency(expected_api_key: str) -> Callable[[str | None], None]:
-    """Cria uma dependência FastAPI (`Depends(...)`) que valida o header `X-Admin-Api-Key`."""
+def build_admin_api_key_dependency(expected_api_key: str) -> Callable[..., None]:
+    """Cria uma dependência FastAPI (`Depends(...)`) que valida `X-Admin-Api-Key` ou `X-API-Key`."""
 
     def verify_admin_api_key(
         x_admin_api_key: str | None = Depends(_api_key_header_scheme),
+        x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     ) -> None:
-        if not x_admin_api_key or not hmac.compare_digest(
-            x_admin_api_key.encode("utf-8"),
+        provided_key = x_admin_api_key or x_api_key
+        if not provided_key or not hmac.compare_digest(
+            provided_key.encode("utf-8"),
             expected_api_key.encode("utf-8"),
         ):
             raise HTTPException(
@@ -31,7 +33,10 @@ def build_admin_api_key_dependency(expected_api_key: str) -> Callable[[str | Non
                     "type": "https://whatsapp-harness.dev/errors/unauthorized-admin",
                     "title": "Acesso administrativo não autorizado",
                     "status": 401,
-                    "detail": "O cabeçalho X-Admin-Api-Key está ausente ou é inválido.",
+                    "detail": (
+                        "O cabeçalho X-Admin-Api-Key (ou X-API-Key) está ausente "
+                        "ou não corresponde ao ADMIN_API_KEY configurado no .env."
+                    ),
                 },
             )
 

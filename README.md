@@ -268,7 +268,7 @@ uv sync
 cp .env.example .env
 ```
 
-Verifique no seu arquivo `.env` as credenciais do seu PostgreSQL local (ex.: `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_PORT=5432`) e a chave administrativa (`ADMIN_API_KEY=dev-admin-secret-key`).
+Verifique no seu arquivo `.env` as credenciais do seu PostgreSQL local (ex.: `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_PORT=5432`) e a chave administrativa (`ADMIN_API_KEY=dev_admin_api_key_change_in_prod`).
 
 ---
 
@@ -381,7 +381,7 @@ Para facilitar seus testes e desenvolvimento de prompts no **Postman**, disponib
 Se você quer enviar uma mensagem no Postman e **ver a resposta da IA imediatamente no mesmo Response JSON** (como um playground de chat), use o endpoint de simulação da **Admin API (`Porta 8001`)**:
 
 * **Método & URL**: `POST http://localhost:8001/admin/simulator/chat`
-* **Header**: `X-API-Key: dev-admin-secret-key`
+* **Header**: `X-Admin-Api-Key: dev_admin_api_key_change_in_prod`
 * **Body (JSON)**:
   ```json
   {
@@ -420,7 +420,7 @@ Para testar a resiliência real de produção (Ingestão na Borda $\rightarrow$ 
 2. **Olhe o Terminal 2 (Worker)**:
    * Após `3 segundos` (janela de debounce), o Worker imprimirá o card `[CONSOLE MOCK OUTBOUND]` com a resposta gerada pelo agente!
 3. **Ou consulte a resposta e a memória pelo próprio Postman na Porta `8001`**:
-   * `GET http://localhost:8001/admin/threads/5511999998888/facts` (Header `X-API-Key: dev-admin-secret-key`).
+   * `GET http://localhost:8001/admin/threads/5511999998888/facts` (Header `X-Admin-Api-Key: dev_admin_api_key_change_in_prod`).
    * No campo `active_messages`, você verá tanto a mensagem do `user` quanto a resposta do `assistant` gerada pelo Worker!
 
 ---

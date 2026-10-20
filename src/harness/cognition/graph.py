@@ -23,7 +23,8 @@ from harness.cognition.guardrails import (
 from harness.cognition.middlewares import MiddlewareContext, MiddlewarePipeline
 from harness.domain.ports import PromptProviderPort, RetrieverPort
 from harness.domain.value_objects import ThreadId
-from harness.settings import GuardrailsConfig
+from harness.ops.telemetry import flush_langfuse, get_langfuse_callback_handler
+from harness.settings import GuardrailsConfig, HarnessSettings
 
 
 class AgentGraphState(TypedDict, total=False):
@@ -94,6 +95,7 @@ class LangGraphCognitionEngine:
         prompt_provider: PromptProviderPort | None = None,
         agent_name: str = "default_agent",
         rag_top_k: int = 4,
+        settings: HarnessSettings | None = None,
     ) -> None:
         self._model = model_adapter
         self._pipeline = middleware_pipeline or MiddlewarePipeline()
@@ -102,6 +104,7 @@ class LangGraphCognitionEngine:
         self._prompt_provider = prompt_provider
         self._agent_name = agent_name
         self._rag_top_k = rag_top_k
+        self._settings = settings
         self.knowledge_tool: BaseTool | None = (
             create_search_company_knowledge_tool(retriever, top_k=rag_top_k)
             if retriever is not None
@@ -155,6 +158,8 @@ class LangGraphCognitionEngine:
             system_prompt, prompt_version = await self._prompt_provider.get_system_prompt(
                 prompt_name=self._agent_name,
                 variables={
+                    "company_name": "Harness WhatsApp",
+                    "agent_role": "Assistente Virtual",
                     "semantic_facts": facts_str,
                     "conversation_summary": summary,
                 },
@@ -164,6 +169,12 @@ class LangGraphCognitionEngine:
             system_prompt = raw_template.replace("{semantic_facts}", facts_str).replace(
                 "{conversation_summary}", summary
             )
+
+        # Se o prompt do Langfuse não incluir os placeholders de memória, anexa ao final para manter a continuidade
+        if "{semantic_facts}" not in system_prompt and "{{semantic_facts}}" not in system_prompt and facts_dict:
+            system_prompt = f"{system_prompt}\n\n## Informações do Cliente (Memória Semântica):\n- {facts_str}"
+        if "{conversation_summary}" not in system_prompt and "{{conversation_summary}}" not in system_prompt and summary and summary != "Sem histórico anterior resumido.":
+            system_prompt = f"{system_prompt}\n\n## Resumo da Conversa Anterior:\n{summary}"
 
         rag_chunks: list[str] = []
         if self._retriever is not None and user_text.strip():
@@ -187,11 +198,27 @@ class LangGraphCognitionEngine:
         user_text = state.get("user_text", "")
         history = state.get("conversation_history") or []
 
-        completion = await self._model.ainvoke_messages(
-            system_prompt=system_prompt,
-            user_message=user_text,
-            conversation_history=history,
-        )
+        prompt_obj: Any = None
+        if self._prompt_provider is not None and hasattr(self._prompt_provider, "get_last_prompt_object"):
+            prompt_obj = self._prompt_provider.get_last_prompt_object(self._agent_name)
+
+        kwargs: dict[str, Any] = {}
+        if prompt_obj is not None:
+            kwargs["metadata"] = {"langfuse_prompt": prompt_obj}
+
+        try:
+            completion = await self._model.ainvoke_messages(
+                system_prompt=system_prompt,
+                user_message=user_text,
+                conversation_history=history,
+                **kwargs,
+            )
+        except TypeError:
+            completion = await self._model.ainvoke_messages(
+                system_prompt=system_prompt,
+                user_message=user_text,
+                conversation_history=history,
+            )
         return {
             "final_reply": completion.content,
             "prompt_tokens": completion.prompt_tokens,
@@ -230,7 +257,33 @@ class LangGraphCognitionEngine:
                 "completion_tokens": 0,
                 "final_reply": "",
             }
-            result_state: dict[str, Any] = await self._compiled_graph.ainvoke(initial_state)
+
+            invoke_config: dict[str, Any] = {}
+            if self._prompt_provider is not None and hasattr(self._prompt_provider, "get_last_prompt_object"):
+                p_obj = self._prompt_provider.get_last_prompt_object(self._agent_name)
+                if p_obj is not None:
+                    invoke_config["metadata"] = {"langfuse_prompt": p_obj}
+
+            lf_handler = (
+                get_langfuse_callback_handler(
+                    self._settings,
+                    session_id=str(ctx.thread_id),
+                    trace_name=f"agent:{self._agent_name}",
+                )
+                if self._settings is not None
+                else None
+            )
+            if lf_handler is not None:
+                invoke_config["callbacks"] = [lf_handler]
+
+            result_state: dict[str, Any] = (
+                await self._compiled_graph.ainvoke(initial_state, config=invoke_config)
+                if invoke_config
+                else await self._compiled_graph.ainvoke(initial_state)
+            )
+
+            if lf_handler is not None:
+                flush_langfuse(self._settings)
 
             ctx.prompt_version = str(result_state.get("prompt_version", ctx.prompt_version))
             ctx.prompt_tokens = int(result_state.get("prompt_tokens", 0))

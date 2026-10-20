@@ -124,6 +124,8 @@ class HarnessSettings(BaseSettings):
     )
 
     def model_post_init(self, __context: Any) -> None:
+        import os
+
         default_url = "postgresql://harness:harness_secret@localhost:5432/whatsapp_harness"
         if self.database_url == default_url and (
             self.postgres_user != "harness" or self.postgres_password != "harness_secret"
@@ -134,6 +136,14 @@ class HarnessSettings(BaseSettings):
                 f"postgresql://{self.postgres_user}:{self.postgres_password}"
                 f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}",
             )
+
+        # Exporta credenciais para o SDK do Langfuse v3 em os.environ
+        if self.langfuse_public_key:
+            os.environ["LANGFUSE_PUBLIC_KEY"] = self.langfuse_public_key
+        if self.langfuse_secret_key:
+            os.environ["LANGFUSE_SECRET_KEY"] = self.langfuse_secret_key
+        if self.langfuse_host:
+            os.environ["LANGFUSE_HOST"] = self.langfuse_host
     whatsapp_verify_token: str = Field(default="dev_verify_token_123")
     whatsapp_app_secret: str = Field(default="dev_app_secret_change_in_prod")
     whatsapp_access_token: str = Field(default="")

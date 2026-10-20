@@ -28,6 +28,7 @@ class CachedPromptEntry:
     raw_template: str
     version: str
     expires_at: float
+    prompt_obj: Any = None
 
 
 class PromptManager:
@@ -49,6 +50,13 @@ class PromptManager:
         """Limpa o cache em memória de prompts."""
         self._cache.clear()
 
+    def get_last_prompt_object(self, prompt_name: str) -> Any | None:
+        """Retorna o objeto do prompt Langfuse associado ao prompt_name (se presente no cache)."""
+        effective_label = self._cfg.default_label
+        cache_key = f"{prompt_name}:{effective_label}"
+        entry = self._cache.get(cache_key)
+        return entry.prompt_obj if entry else None
+
     def _get_or_init_langfuse_client(self) -> LangfusePromptClientProtocol | None:
         if self._langfuse_client is not None:
             return self._langfuse_client
@@ -59,6 +67,12 @@ class PromptManager:
         if not (self._settings.langfuse_public_key and self._settings.langfuse_secret_key):
             return None
         try:
+            from harness.ops.telemetry import get_langfuse_client
+
+            client = get_langfuse_client(self._settings)
+            if client is not None:
+                self._langfuse_client = client
+                return self._langfuse_client
             from langfuse import Langfuse
 
             self._langfuse_client = Langfuse(
@@ -94,10 +108,15 @@ class PromptManager:
 
     @staticmethod
     def _render_variables(raw_template: str, variables: dict[str, str] | None) -> str:
+        defaults = {
+            "company_name": "Harness AI WhatsApp",
+            "agent_role": "Assistente Virtual",
+            "semantic_facts": "Nenhum fato semântico registrado ainda.",
+            "conversation_summary": "Sem histórico anterior resumido.",
+        }
+        merged = {**defaults, **(variables or {})}
         rendered = raw_template
-        if not variables:
-            return rendered
-        for k, v in variables.items():
+        for k, v in merged.items():
             # Suporta tanto sintaxe Python/YAML `{var}` quanto sintaxe Mustache do Langfuse `{{var}}`
             rendered = rendered.replace(f"{{{{{k}}}}}", str(v)).replace(f"{{{k}}}", str(v))
         return rendered
@@ -119,12 +138,14 @@ class PromptManager:
 
         raw_template: str | None = None
         version: str | None = None
+        remote_prompt_obj: Any = None
 
         if self._cfg.provider == "local_with_langfuse":
             client = self._get_or_init_langfuse_client()
             if client is not None:
                 try:
                     remote_prompt = client.get_prompt(prompt_name, label=effective_label)
+                    remote_prompt_obj = remote_prompt
                     raw_template = str(
                         getattr(remote_prompt, "prompt", "") or remote_prompt
                     )
@@ -133,6 +154,7 @@ class PromptManager:
                 except Exception:
                     raw_template = None
                     version = None
+                    remote_prompt_obj = None
 
         if not raw_template or not version:
             raw_template, version = self._load_local_yaml(prompt_name)
@@ -143,6 +165,7 @@ class PromptManager:
                 raw_template=raw_template,
                 version=version,
                 expires_at=now + ttl,
+                prompt_obj=remote_prompt_obj,
             )
 
         return self._render_variables(raw_template, variables), version
