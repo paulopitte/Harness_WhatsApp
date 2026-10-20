@@ -55,6 +55,12 @@ class ThreadsRepositoryProtocol(Protocol):
 
     async def get_semantic_facts(self, thread_id: str) -> dict[str, str]: ...
 
+    async def list_threads(self, limit: int = 50) -> list[Thread]: ...
+
+    async def get_all_messages(
+        self, thread_id: str, limit: int = 100
+    ) -> list[ThreadMessage]: ...
+
 
 class InMemoryThreadsRepository:
     """Implementação em memória com paridade comportamental em relação ao PostgreSQL."""
@@ -156,6 +162,18 @@ class InMemoryThreadsRepository:
         key = str(ThreadId(thread_id))
         thread_facts = self._facts.get(key, {})
         return {k: v.fact_value for k, v in thread_facts.items()}
+
+    async def list_threads(self, limit: int = 50) -> list[Thread]:
+        threads = list(self._threads.values())
+        threads.sort(key=lambda t: t.updated_at, reverse=True)
+        return threads[:limit]
+
+    async def get_all_messages(
+        self, thread_id: str, limit: int = 100
+    ) -> list[ThreadMessage]:
+        key = str(ThreadId(thread_id))
+        msgs = self._messages.get(key, [])
+        return msgs[-limit:]
 
 
 class PostgresThreadsRepository:
@@ -363,6 +381,53 @@ class PostgresThreadsRepository:
                 )
                 rows = await cur.fetchall()
                 return {str(r["fact_key"]): str(r["fact_value"]) for r in rows}
+
+    async def list_threads(self, limit: int = 50) -> list[Thread]:
+        async with self._pool.connection() as conn:
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(
+                    """
+                    SELECT thread_id, phone_number, mode, conversation_summary,
+                           daily_tokens_used, daily_tokens_reset_at,
+                           rate_window_start, rate_window_count,
+                           created_at, updated_at
+                    FROM threads
+                    ORDER BY updated_at DESC
+                    LIMIT %s;
+                    """,
+                    (limit,),
+                )
+                rows = await cur.fetchall()
+                return [self._map_thread(r) for r in rows]
+
+    async def get_all_messages(
+        self, thread_id: str, limit: int = 100
+    ) -> list[ThreadMessage]:
+        key = str(ThreadId(thread_id))
+        async with self._pool.connection() as conn:
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(
+                    """
+                    SELECT id, thread_id, role, content, is_summarized, created_at
+                    FROM thread_messages
+                    WHERE thread_id = %s
+                    ORDER BY created_at ASC
+                    LIMIT %s;
+                    """,
+                    (key, limit),
+                )
+                rows = await cur.fetchall()
+                return [
+                    ThreadMessage(
+                        id=r["id"],
+                        thread_id=r["thread_id"],
+                        role=r["role"],
+                        content=r["content"],
+                        is_summarized=bool(r["is_summarized"]),
+                        created_at=r["created_at"],
+                    )
+                    for r in rows
+                ]
 
     @staticmethod
     def _map_thread(row: dict[str, Any]) -> Thread:

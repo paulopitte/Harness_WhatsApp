@@ -13,7 +13,7 @@ from uuid import UUID
 from harness.domain.events import QueueStats
 from harness.domain.message import NormalizedTextMessage
 from harness.domain.queue import QueueItem
-from harness.domain.value_objects import ThreadId
+from harness.domain.value_objects import QueueStatus, ThreadId
 
 
 @runtime_checkable
@@ -60,6 +60,12 @@ class QueueConsumerProtocol(Protocol):
 
     async def get_stats(self) -> QueueStats:
         """Retorna estatísticas atuais da fila e quarentena."""
+        ...
+
+    async def list_items(
+        self, status: QueueStatus | None = None, limit: int = 50
+    ) -> list[QueueItem]:
+        """Lista itens da fila opcionalmente filtrados por status."""
         ...
 
 

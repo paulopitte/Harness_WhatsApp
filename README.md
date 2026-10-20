@@ -449,6 +449,28 @@ Abra o seu navegador em [http://localhost:8002](http://localhost:8002).
 
 ---
 
+#### 🎛️ Opção E: Painel de Controle Empresarial / Cockpit (Next.js + Tailwind + shadcn/ui — Porta 3000)
+Para operar a plataforma com um **Cockpit SaaS completo** (Dashboard com métricas, Inbox com Handoff Humano em 3 colunas, visualizador da Memória Semântica do cliente, Fila/DLQ com Replay e Central de Segurança contra Prompt Injection):
+
+```bash
+# 1. Certifique-se de que a Admin API está rodando na porta 8001
+uv run python -m harness.ops.run_admin
+
+# 2. Em outro terminal, inicie o frontend em Next.js
+cd frontend
+npm run dev
+```
+
+Abra o seu navegador em [http://localhost:3000](http://localhost:3000).
+
+* **Dashboard Geral (`/`):** KPIs de mensagens, conversas ativas (Bot vs Humano) e saúde dos serviços.
+* **Conversas & Handoff (`/conversations`):** Split-view em 3 colunas com chat ao vivo, alternância em 1 clique entre Bot e Atendente Humano, e painel lateral com a Memória Semântica.
+* **Fila & DLQ (`/queue`):** Tabela de alta densidade das mensagens no PostgreSQL e botão de Replay transacional.
+* **Central de Segurança (`/security`):** Logs auditáveis de turnos e bloqueios por injeção de prompt.
+* **Agentes & Prompts (`/agents`):** Editor dinâmico de YAML e toggles para Deep Research e Web Crawler.
+
+---
+
 ### Passo 7: Rodar a Suíte de Testes e Qualidade de Código
 
 ```bash

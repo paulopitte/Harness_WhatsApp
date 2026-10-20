@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
+from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
 from harness.domain.events import QueueStats
@@ -258,6 +259,23 @@ class PostgresQueueAdapter:
                 quarantined_inbound=int(row.get("quarantined_inbound", 0)),
             )
 
+    async def list_items(
+        self, status: QueueStatus | None = None, limit: int = 50
+    ) -> list[QueueItem]:
+        """Lista itens da fila com filtro opcional por status."""
+        query = "SELECT * FROM queue_items"
+        params: list[Any] = []
+        if status:
+            query += " WHERE status = %s"
+            params.append(str(status))
+        query += " ORDER BY created_at DESC LIMIT %s;"
+        params.append(limit)
+
+        async with self._pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(query, tuple(params))
+            rows = await cur.fetchall()
+            return [self._row_to_item(r) for r in rows]
+
     async def save_quarantine_entry(self, entry: QuarantineEntry) -> None:
         """Persiste um registro de quarentena de borda na tabela `quarantine_inbound`."""
         async with self._pool.connection() as conn:
@@ -429,6 +447,16 @@ class InMemoryQueueAdapter:
                 dead=sum(1 for i in self._items.values() if i.status == QueueStatus.DEAD),
                 quarantined_inbound=len(self._quarantine),
             )
+
+    async def list_items(
+        self, status: QueueStatus | None = None, limit: int = 50
+    ) -> list[QueueItem]:
+        async with self._lock:
+            items = list(self._items.values())
+            if status:
+                items = [i for i in items if i.status == status]
+            items.sort(key=lambda x: x.created_at, reverse=True)
+            return [i.model_copy(deep=True) for i in items[:limit]]
 
     async def save_quarantine_entry(self, entry: QuarantineEntry) -> None:
         async with self._lock:

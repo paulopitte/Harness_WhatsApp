@@ -1,4 +1,4 @@
-# Feature Specification: Painel de Controle Empresarial (004-control-plane-ui)
+# Feature Specification: Painel de Controle (Frontend)/UI (004-control-plane-ui)
 
 > **Spec-Driven Development (SpecKit) — Fase 4 da WhatsApp AI Harness**  
 > *Baseado em Clean Architecture, Domain-Driven Design (DDD), SOLID e Ports & Adapters.*  
