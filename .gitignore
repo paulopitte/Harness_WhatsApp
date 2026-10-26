@@ -23,6 +23,10 @@ wheels/
 venv/
 ENV/
 
+# Node / Frontend
+node_modules/
+.next/
+
 # Testing & Type Checking
 .pytest_cache/
 .mypy_cache/

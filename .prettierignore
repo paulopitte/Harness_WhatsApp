@@ -1,0 +1,10 @@
+node_modules
+.venv
+.next
+.mypy_cache
+.pytest_cache
+.ruff_cache
+dist
+build
+coverage
+*.lock
