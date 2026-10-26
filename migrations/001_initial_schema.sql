@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "vector";
 -- 1. Tabela de Threads (Estado da Conversa, Rate Limit, Orçamento e Handoff Humano — FR-015)
 CREATE TABLE IF NOT EXISTS threads (
     thread_id VARCHAR(64) PRIMARY KEY,
-    phone_number VARCHAR(20) NOT NULL UNIQUE,
+    phone_number VARCHAR(64) NOT NULL UNIQUE,
     mode VARCHAR(16) NOT NULL DEFAULT 'bot' CHECK (mode IN ('bot', 'human', 'paused')),
     conversation_summary TEXT NOT NULL DEFAULT '',
     daily_tokens_used INTEGER NOT NULL DEFAULT 0,

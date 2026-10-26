@@ -4,11 +4,27 @@ Uso:
     uv run chainlit run scripts/run_chainlit.py --port 8002
 """
 
-import chainlit as cl
+import asyncio
+import os
+import sys
+from uuid import uuid4
 
-from harness.app import HarnessContainer, build_container
-from harness.domain.value_objects import ThreadId
-from harness.settings import get_settings
+# No Windows, o driver assíncrono do psycopg v3 requer SelectorEventLoop
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# Desativa o data layer interno do Chainlit antes que ele leia o .env
+os.environ.pop("DATABASE_URL", None)
+
+import chainlit as cl  # noqa: E402
+import chainlit.data  # noqa: E402
+
+from harness.app import HarnessContainer, build_container  # noqa: E402
+from harness.domain.value_objects import ThreadId  # noqa: E402
+from harness.settings import get_settings  # noqa: E402
+
+chainlit.data._data_layer_initialized = True
+chainlit.data._data_layer = None
 
 _container: HarnessContainer | None = None
 
@@ -23,7 +39,7 @@ async def get_or_build_container() -> HarnessContainer:
 
 @cl.on_chat_start
 async def on_chat_start() -> None:
-    session_id = cl.user_session.get("id") or "guest"
+    session_id = cl.user_session.get("id") or str(uuid4())
     thread_id = str(ThreadId(f"web:{session_id}"))
     cl.user_session.set("thread_id", thread_id)
 
@@ -42,7 +58,7 @@ async def on_chat_start() -> None:
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
-    thread_id_str = cl.user_session.get("thread_id") or "web_guest"
+    thread_id_str = cl.user_session.get("thread_id") or "web:guest"
     thread_id = ThreadId(thread_id_str)
     container = await get_or_build_container()
 
