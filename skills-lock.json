@@ -1,11 +1,23 @@
 {
   "version": 1,
   "skills": {
+    "brainstorming": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/brainstorming/SKILL.md",
+      "computedHash": "da48054155b36bfe3fc2ad24f97087af4a495e1b6a4e352233cc1a77550838e5"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "skillPath": "skills/frontend-design/SKILL.md",
       "computedHash": "106acf230014cbb43ca34e6410371321b56ca742f9ee0442e8ec05bf02eb0384"
+    },
+    "prd-generation": {
+      "source": "pixel-process-ug/superkit-agents",
+      "sourceType": "github",
+      "skillPath": "templates/skills/prd-generation/SKILL.md",
+      "computedHash": "e3766ba91fa41a11e0b461892618b3e0ca0cbb2d94448a1e7c454c60868ae250"
     },
     "setup-pre-commit": {
       "source": "mattpocock/skills",
